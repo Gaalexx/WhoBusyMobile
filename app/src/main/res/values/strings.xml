@@ -1,0 +1,10 @@
+<resources>
+    <string name="app_name">WhoBusy</string>
+    <string name="destination_home">Главная</string>
+    <string name="destination_favorites">Избранное</string>
+    <string name="destination_profile">Профиль</string>
+    <string name="home_welcome">Добро пожаловать в WhoBusy</string>
+    <string name="app_version">Версия %1$s</string>
+    <string name="favorites_placeholder">Здесь появится избранное</string>
+    <string name="profile_placeholder">Здесь появится ваш профиль</string>
+</resources>

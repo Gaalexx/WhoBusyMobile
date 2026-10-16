@@ -17,15 +17,24 @@ import com.project.whobusy.presentation.calendar.viewmodel.CalendarState
 import java.time.format.DateTimeFormatter
 
 @Composable
-fun WeekAllDayEvents(state: CalendarState, onEvent: (CalendarCommand) -> Unit) {
+fun WeekAllDayEvents(
+    state: CalendarState,
+    onEvent: (CalendarCommand) -> Unit,
+) {
     val start = weekStart(state.selectedDate).atStartOfDay()
     val events = state.events.filter { it.allDay && it.start < start.plusWeeks(1) && it.end > start }
     if (events.isEmpty()) return
-    LazyRow(contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+    LazyRow(
+        contentPadding = PaddingValues(horizontal = 12.dp, vertical = 8.dp),
+        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    ) {
         items(events, key = { it.id }) { event ->
             val date = event.start.format(DateTimeFormatter.ofPattern("dd.MM"))
-            WhoBusyEventChip("$date · ${event.ownerName.substringBefore(" ")} · ${event.title}",
-                calendarColor(event.displayColor), { onEvent(CalendarCommand.OpenEvent(event)) })
+            WhoBusyEventChip(
+                "$date · ${event.ownerName.substringBefore(" ")} · ${event.title}",
+                calendarColor(event.displayColor),
+                { onEvent(CalendarCommand.OpenEvent(event)) },
+            )
         }
     }
 }

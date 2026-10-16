@@ -22,14 +22,17 @@ import com.project.whobusy.core.ui.components.WhoBusyCalendarBadge
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 @Composable
-fun EmptyCalendar(onCreate: () -> Unit, onSelectCalendars: () -> Unit) {
+fun EmptyCalendar(
+    onCreate: () -> Unit,
+    onSelectCalendars: () -> Unit,
+) {
     Column(
         Modifier
             .fillMaxSize()
             .verticalScroll(rememberScrollState())
             .padding(16.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.Center
+        verticalArrangement = Arrangement.Center,
     ) {
         Spacer(Modifier.height(36.dp))
         WhoBusyCalendarBadge()
@@ -39,7 +42,7 @@ fun EmptyCalendar(onCreate: () -> Unit, onSelectCalendars: () -> Unit) {
         Text(
             "Добавьте свои планы или включите\nдоступные календари коллег.",
             textAlign = TextAlign.Center,
-            color = MaterialTheme.colorScheme.onSurfaceVariant
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(32.dp))
         WhoBusyButton("Создать событие", onCreate)

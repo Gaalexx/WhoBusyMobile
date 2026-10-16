@@ -20,22 +20,34 @@ import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarState
 
 @Composable
-fun CalendarToolbar(state: CalendarState, onEvent: (CalendarCommand) -> Unit) {
+fun CalendarToolbar(
+    state: CalendarState,
+    onEvent: (CalendarCommand) -> Unit,
+) {
     var expanded by remember { mutableStateOf(false) }
     WhoBusyTopBar(state.tab.title, action = {
-        if (state.tab == CalendarTab.Calendar) Box {
-            WhoBusyIconButton(
-                UiIcon.More, "Меню календаря", { expanded = true }, tint = Color.White
-            )
-            DropdownMenu(expanded, { expanded = false }) {
-                listOf(
-                    "Предыдущий период" to CalendarCommand.MovePeriod(-1),
-                    "Следующий период" to CalendarCommand.MovePeriod(1),
-                    "Обновить" to CalendarCommand.Refresh
-                ).forEach { (title, command) ->
-                    DropdownMenuItem(
-                        text = { Text(title) },
-                        onClick = { expanded = false; onEvent(command) })
+        if (state.tab == CalendarTab.Calendar) {
+            Box {
+                WhoBusyIconButton(
+                    UiIcon.More,
+                    "Меню календаря",
+                    { expanded = true },
+                    tint = Color.White,
+                )
+                DropdownMenu(expanded, { expanded = false }) {
+                    listOf(
+                        "Предыдущий период" to CalendarCommand.MovePeriod(-1),
+                        "Следующий период" to CalendarCommand.MovePeriod(1),
+                        "Обновить" to CalendarCommand.Refresh,
+                    ).forEach { (title, command) ->
+                        DropdownMenuItem(
+                            text = { Text(title) },
+                            onClick = {
+                                expanded = false
+                                onEvent(command)
+                            },
+                        )
+                    }
                 }
             }
         }
@@ -46,7 +58,6 @@ fun CalendarToolbar(state: CalendarState, onEvent: (CalendarCommand) -> Unit) {
 @Composable
 private fun ToolbarPreview() {
     WhoBusyTheme {
-        CalendarToolbar(
-            com.project.whobusy.presentation.calendar.preview.CalendarPreviewData.state, {})
+        CalendarToolbar(com.project.whobusy.presentation.calendar.preview.CalendarPreviewData.state, {})
     }
 }

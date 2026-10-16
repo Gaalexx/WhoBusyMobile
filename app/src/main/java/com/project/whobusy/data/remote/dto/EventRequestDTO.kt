@@ -15,9 +15,15 @@ data class EventRequestDTO(
     val status: String,
 ) {
     companion object {
-        fun fromDomain(draft: EventDraft) = EventRequestDTO(
-            draft.title.trim(), draft.start.toString(), draft.end.toString(),
-            draft.description, draft.location, draft.allDay, draft.status.name.lowercase(),
-        )
+        fun fromDomain(draft: EventDraft) =
+            EventRequestDTO(
+                draft.title.trim(),
+                draft.start.toString(),
+                draft.end.toString(),
+                draft.description,
+                draft.location,
+                draft.allDay,
+                draft.status.name.lowercase(),
+            )
     }
 }

@@ -18,13 +18,15 @@ object WhoBusyColors {
     val ErrorTint = Color(0xFFFDEFF0)
 }
 
-fun calendarColor(hex: String): Color = runCatching {
-    Color(android.graphics.Color.parseColor(hex))
-}.getOrDefault(WhoBusyColors.Primary)
+fun calendarColor(hex: String): Color =
+    runCatching {
+        Color(android.graphics.Color.parseColor(hex))
+    }.getOrDefault(WhoBusyColors.Primary)
 
-fun calendarTint(color: Color): Color = when (color) {
-    WhoBusyColors.Primary -> WhoBusyColors.BlueTint
-    WhoBusyColors.Purple -> WhoBusyColors.PurpleTint
-    WhoBusyColors.Green -> WhoBusyColors.GreenTint
-    else -> color.copy(alpha = 0.1f)
-}
+fun calendarTint(color: Color): Color =
+    when (color) {
+        WhoBusyColors.Primary -> WhoBusyColors.BlueTint
+        WhoBusyColors.Purple -> WhoBusyColors.PurpleTint
+        WhoBusyColors.Green -> WhoBusyColors.GreenTint
+        else -> color.copy(alpha = 0.1f)
+    }

@@ -1,6 +1,9 @@
 package com.project.whobusy.core.ui.components
 
-import androidx.compose.material3.*
+import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -10,7 +13,9 @@ import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 @Composable
 fun WhoBusyTextButton(
-    text: String, onClick: () -> Unit, modifier: Modifier = Modifier,
+    text: String,
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
     textStyle: TextStyle = MaterialTheme.typography.labelMedium,
 ) {
@@ -21,4 +26,6 @@ fun WhoBusyTextButton(
 
 @Preview
 @Composable
-private fun TextButtonPreview() { WhoBusyTheme { WhoBusyTextButton("Сегодня", {}) } }
+private fun TextButtonPreview() {
+    WhoBusyTheme { WhoBusyTextButton("Сегодня", {}) }
+}

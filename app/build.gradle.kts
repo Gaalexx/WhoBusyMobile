@@ -6,17 +6,21 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val useMockData = providers.gradleProperty("whoBusy.useMockData")
-    .map(String::toBooleanStrict).getOrElse(true)
+val useMockData =
+    providers
+        .gradleProperty("whoBusy.useMockData")
+        .map(String::toBooleanStrict)
+        .getOrElse(true)
 val apiBaseUrl = providers.gradleProperty("whoBusy.apiBaseUrl").getOrElse("")
 val escapedApiBaseUrl = apiBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
     namespace = "com.project.whobusy"
     compileSdk {
-        version = release(37) {
-            minorApiLevel = 1
-        }
+        version =
+            release(37) {
+                minorApiLevel = 1
+            }
     }
 
     defaultConfig {

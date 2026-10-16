@@ -14,16 +14,18 @@ data class UserDTO(
     val color: String,
     @SerialName("is_active") val isActive: Boolean,
 ) {
-    fun toDomain() = CalendarUser(
-        id = id,
-        email = email,
-        fullName = fullName,
-        role = when (role) {
-            "admin" -> UserRole.ADMIN
-            "user" -> UserRole.USER
-            else -> error("Unsupported user role: $role")
-        },
-        color = color,
-        isActive = isActive,
-    )
+    fun toDomain() =
+        CalendarUser(
+            id = id,
+            email = email,
+            fullName = fullName,
+            role =
+                when (role) {
+                    "admin" -> UserRole.ADMIN
+                    "user" -> UserRole.USER
+                    else -> error("Unsupported user role: $role")
+                },
+            color = color,
+            isActive = isActive,
+        )
 }

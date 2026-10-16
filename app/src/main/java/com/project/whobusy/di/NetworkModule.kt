@@ -6,17 +6,18 @@ import dagger.Provides
 import dagger.hilt.InstallIn
 import dagger.hilt.components.SingletonComponent
 import io.ktor.client.HttpClient
-import javax.inject.Singleton
 import kotlinx.serialization.json.Json
+import javax.inject.Singleton
 
 @Module
 @InstallIn(SingletonComponent::class)
 object NetworkModule {
     @Provides
     @Singleton
-    fun provideJson(): Json = Json {
-        ignoreUnknownKeys = true
-    }
+    fun provideJson(): Json =
+        Json {
+            ignoreUnknownKeys = true
+        }
 
     @Provides
     @Singleton

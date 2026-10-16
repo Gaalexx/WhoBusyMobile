@@ -2,7 +2,9 @@ package com.project.whobusy.data.remote
 
 import java.net.URI
 
-data class ApiConfiguration(val baseUrl: String) {
+data class ApiConfiguration(
+    val baseUrl: String,
+) {
     fun endpoint(path: String): String {
         val uri = URI(baseUrl)
         require(uri.scheme == "https" && !uri.host.isNullOrBlank()) {

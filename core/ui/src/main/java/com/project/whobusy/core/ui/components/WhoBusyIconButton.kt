@@ -1,8 +1,11 @@
 package com.project.whobusy.core.ui.components
 
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.CircleShape
-import androidx.compose.material3.*
+import androidx.compose.material3.FloatingActionButton
+import androidx.compose.material3.IconButton
+import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
@@ -24,9 +27,14 @@ fun WhoBusyIconButton(
 }
 
 @Composable
-fun WhoBusyAddButton(onClick: () -> Unit, modifier: Modifier = Modifier) {
+fun WhoBusyAddButton(
+    onClick: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
     FloatingActionButton(
-        onClick, modifier, shape = CircleShape,
+        onClick,
+        modifier,
+        shape = CircleShape,
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
     ) {

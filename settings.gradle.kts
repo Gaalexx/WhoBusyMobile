@@ -25,4 +25,3 @@ dependencyResolutionManagement {
 rootProject.name = "WhoBusy"
 include(":app")
 include(":core:ui")
- 

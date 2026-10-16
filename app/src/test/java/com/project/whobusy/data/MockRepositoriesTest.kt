@@ -7,10 +7,6 @@ import com.project.whobusy.data.session.SessionStore
 import com.project.whobusy.domain.model.AuthenticationException
 import com.project.whobusy.domain.model.CalendarQuery
 import com.project.whobusy.domain.model.InvalidCredentialsException
-import java.time.Clock
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.runBlocking
 import org.junit.Assert.assertEquals
@@ -18,6 +14,10 @@ import org.junit.Assert.assertFalse
 import org.junit.Assert.assertNull
 import org.junit.Assert.assertTrue
 import org.junit.Test
+import java.time.Clock
+import java.time.Instant
+import java.time.LocalDate
+import java.time.ZoneOffset
 
 class MockRepositoriesTest {
     private val session = SessionStore()
@@ -27,54 +27,67 @@ class MockRepositoriesTest {
     private val today = LocalDate.of(2026, 10, 15)
 
     @Test
-    fun loginNormalizesEmailAndLogoutClearsSession() = runBlocking {
-        val user = auth.login("  DEMO@WHOBUSY.TEST  ", DemoAccount.PASSWORD).getOrThrow()
+    fun loginNormalizesEmailAndLogoutClearsSession() =
+        runBlocking {
+            val user = auth.login("  DEMO@WHOBUSY.TEST  ", DemoAccount.PASSWORD).getOrThrow()
 
-        assertEquals(user, auth.currentUser.first())
-        auth.logout()
-        assertNull(auth.currentUser.first())
-        assertNull(session.getToken())
-    }
-
-    @Test
-    fun invalidPasswordDoesNotCreateSession() = runBlocking {
-        val result = auth.login(DemoAccount.EMAIL, "incorrect")
-
-        assertTrue(result.exceptionOrNull() is InvalidCredentialsException)
-        assertNull(session.getUser())
-    }
+            assertEquals(user, auth.currentUser.first())
+            auth.logout()
+            assertNull(auth.currentUser.first())
+            assertNull(session.getToken())
+        }
 
     @Test
-    fun calendarRequiresAuthenticatedUser() = runBlocking {
-        assertTrue(calendar.getUsers().exceptionOrNull() is AuthenticationException)
-        assertTrue(calendar.getEvents(query()).exceptionOrNull() is AuthenticationException)
-    }
+    fun invalidPasswordDoesNotCreateSession() =
+        runBlocking {
+            val result = auth.login(DemoAccount.EMAIL, "incorrect")
+
+            assertTrue(result.exceptionOrNull() is InvalidCredentialsException)
+            assertNull(session.getUser())
+        }
 
     @Test
-    fun filtersRespectDatesOwnersAndAlwaysIncludeOwnEvents() = runBlocking {
-        auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
-
-        val events = calendar.getEvents(query(setOf(2, 999))).getOrThrow()
-
-        assertEquals(setOf(1, 2), events.map { it.ownerId }.toSet())
-        assertTrue(events.all { it.start.toLocalDate() == today })
-        assertFalse(events.any { it.ownerId == 999 })
-    }
+    fun calendarRequiresAuthenticatedUser() =
+        runBlocking {
+            assertTrue(calendar.getUsers().exceptionOrNull() is AuthenticationException)
+            assertTrue(calendar.getEvents(query()).exceptionOrNull() is AuthenticationException)
+        }
 
     @Test
-    fun visibilityDropsUnavailableIdsAndCanShowOnlyOwnCalendar() = runBlocking {
-        auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
-        calendar.setVisibleOwnerIds(setOf(1, 2, 999)).getOrThrow()
-        assertEquals(setOf(2), calendar.getVisibleOwnerIds().getOrThrow())
+    fun filtersRespectDatesOwnersAndAlwaysIncludeOwnEvents() =
+        runBlocking {
+            auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
 
-        calendar.setVisibleOwnerIds(emptySet()).getOrThrow()
+            val events = calendar.getEvents(query(setOf(2, 999))).getOrThrow()
 
-        assertEquals(setOf(1), calendar.getEvents(query()).getOrThrow().map { it.ownerId }.toSet())
-    }
+            assertEquals(setOf(1, 2), events.map { it.ownerId }.toSet())
+            assertTrue(events.all { it.start.toLocalDate() == today })
+            assertFalse(events.any { it.ownerId == 999 })
+        }
 
-    private fun query(ownerIds: Set<Int> = emptySet()) = CalendarQuery(
-        start = today.atStartOfDay(),
-        end = today.plusDays(1).atStartOfDay(),
-        ownerIds = ownerIds,
-    )
+    @Test
+    fun visibilityDropsUnavailableIdsAndCanShowOnlyOwnCalendar() =
+        runBlocking {
+            auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
+            calendar.setVisibleOwnerIds(setOf(1, 2, 999)).getOrThrow()
+            assertEquals(setOf(2), calendar.getVisibleOwnerIds().getOrThrow())
+
+            calendar.setVisibleOwnerIds(emptySet()).getOrThrow()
+
+            assertEquals(
+                setOf(1),
+                calendar
+                    .getEvents(query())
+                    .getOrThrow()
+                    .map { it.ownerId }
+                    .toSet(),
+            )
+        }
+
+    private fun query(ownerIds: Set<Int> = emptySet()) =
+        CalendarQuery(
+            start = today.atStartOfDay(),
+            end = today.plusDays(1).atStartOfDay(),
+            ownerIds = ownerIds,
+        )
 }

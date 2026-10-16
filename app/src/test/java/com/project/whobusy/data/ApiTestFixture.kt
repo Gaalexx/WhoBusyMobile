@@ -17,22 +17,26 @@ internal class ApiTestFixture(
 ) : AutoCloseable {
     val requests = mutableListOf<HttpRequestData>()
     val configuration = ApiConfiguration("https://calendar.example.test/api/")
-    val client = HttpClient(MockEngine { request ->
-        requests.add(request)
-        val (body, status) = response(request)
-        respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
-    }) {
-        expectSuccess = true
-        install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
-    }
+    val client =
+        HttpClient(
+            MockEngine { request ->
+                requests.add(request)
+                val (body, status) = response(request)
+                respond(body, status, headersOf(HttpHeaders.ContentType, "application/json"))
+            },
+        ) {
+            expectSuccess = true
+            install(ContentNegotiation) { json(Json { ignoreUnknownKeys = true }) }
+        }
 
     override fun close() = client.close()
 
     companion object {
-        val userJson = """
+        val userJson =
+            """
             {"id":1,"email":"demo@whobusy.test","full_name":"Александр Иванов",
              "role":"user","color":"#4c5c9e","is_active":true}
-        """.trimIndent()
+            """.trimIndent()
         val tokenJson = """{"access_token":"test-jwt","token_type":"bearer"}"""
     }
 }

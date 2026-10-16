@@ -9,4 +9,7 @@ data class LoginState(
     val error: String? = null,
 )
 
-data class LoginDefaults(val email: String = "", val password: String = "")
+data class LoginDefaults(
+    val email: String = "",
+    val password: String = "",
+)

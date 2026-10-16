@@ -26,6 +26,7 @@
 - Цвета календарей: blue `#2481CC`, purple `#6D4F9C`, green `#357F59`; светлые заливки карточек вынесены в theme.
 - Кнопки: высота 50 dp, скругление 12 dp. Дневная шкала: 64 dp/час; недельная: 56 dp/час.
 - Иконки переведены из SVG в Android vector drawable; скриншоты не используются как UI. Шрифт — системный sans-serif Android.
+- Нижняя навигация адаптирована из [GameHub / BottomControl](https://github.com/Gaalexx/GameHub/blob/master/app/src/main/java/com/project/gamehub/presentation/navigation/BottomControl.kt): плавающая primary-панель шириной 80%, высотой 64 dp, со скруглением 25 dp и подвижным индикатором (onPrimary, alpha 0.2). Для WhoBusy оставлены три иконки с подписями; вертикальные отступы 10 dp и системный нижний inset учитываются в CalendarScreen.
 - Общие элементы и Preview — в `core:ui`; Preview экранов — рядом с чистыми Composable, без Hilt/сети.
 
 Даты и события отличаются от статичного макета: демоданные вычисляются относительно текущего дня. Скриншоты входа, дня, недели, месяца и выбора коллег просмотрены на Android 15. Автоматических screenshot regression tests пока нет.

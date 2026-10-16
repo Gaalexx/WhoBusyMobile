@@ -1,21 +1,23 @@
 package com.project.whobusy.presentation.calendar.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.navigationBars
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.statusBars
-import androidx.compose.foundation.layout.windowInsetsBottomHeight
 import androidx.compose.foundation.layout.windowInsetsTopHeight
 import androidx.compose.material3.Scaffold
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.project.whobusy.core.ui.components.UiDestination
 import com.project.whobusy.core.ui.components.UiIcon
 import com.project.whobusy.core.ui.components.WhoBusyAddButton
@@ -36,39 +38,50 @@ import java.time.LocalDateTime
 fun CalendarScreen(
     state: CalendarState,
     onEvent: (CalendarCommand) -> Unit,
-    now: LocalDateTime = LocalDateTime.now()
+    now: LocalDateTime = LocalDateTime.now(),
 ) {
+    val isEmptyDay = state.mode == CalendarMode.Day && eventsOnDate(state.events, state.selectedDate).isEmpty()
+    val canCreateEvent = state.tab == CalendarTab.Calendar && !state.isLoading && state.error == null && !isEmptyDay
+
     Column(
         Modifier
             .fillMaxSize()
-            .background(Color.White)
+            .background(Color.White),
     ) {
         Spacer(
             Modifier
                 .fillMaxWidth()
                 .background(WhoBusyColors.Header)
-                .windowInsetsTopHeight(WindowInsets.statusBars)
+                .windowInsetsTopHeight(WindowInsets.statusBars),
         )
         Scaffold(
             modifier = Modifier.weight(1f),
             contentWindowInsets = WindowInsets(0),
             topBar = { CalendarToolbar(state, onEvent) },
             bottomBar = {
-                WhoBusyBottomBar(
-                    listOf(
-                        UiDestination("Календарь", UiIcon.Calendar),
-                        UiDestination("Календари", UiIcon.People),
-                        UiDestination("Профиль", UiIcon.Profile)
-                    ), state.tab.ordinal
+                Box(
+                    modifier =
+                        Modifier
+                            .fillMaxWidth()
+                            .navigationBarsPadding()
+                            .padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
                 ) {
-                    onEvent(CalendarCommand.SelectTab(CalendarTab.entries[it]))
+                    WhoBusyBottomBar(
+                        items =
+                            listOf(
+                                UiDestination("Календарь", UiIcon.Calendar),
+                                UiDestination("Календари", UiIcon.People),
+                                UiDestination("Профиль", UiIcon.Profile),
+                            ),
+                        selected = state.tab.ordinal,
+                        onSelect = { onEvent(CalendarCommand.SelectTab(CalendarTab.entries[it])) },
+                        modifier = Modifier.fillMaxWidth(0.8f),
+                    )
                 }
             },
             floatingActionButton = {
-                if (state.tab == CalendarTab.Calendar && !state.isLoading && state.error == null && (state.mode != CalendarMode.Day || eventsOnDate(
-                        state.events, state.selectedDate
-                    ).isNotEmpty())
-                ) {
+                if (canCreateEvent) {
                     WhoBusyAddButton({ onEvent(CalendarCommand.CreateEvent) })
                 }
             },
@@ -77,49 +90,45 @@ fun CalendarScreen(
             Column(
                 Modifier
                     .padding(padding)
-                    .fillMaxSize()
+                    .fillMaxSize(),
             ) {
                 when (state.tab) {
                     CalendarTab.Calendars -> CalendarsScreen(state, onEvent)
-                    CalendarTab.Profile -> state.user?.let {
-                        ProfileScreen(it) {
-                            onEvent(
-                                CalendarCommand.Logout
-                            )
+                    CalendarTab.Profile ->
+                        state.user?.let {
+                            ProfileScreen(it) {
+                                onEvent(CalendarCommand.Logout)
+                            }
                         }
-                    }
 
                     CalendarTab.Calendar -> {
                         CalendarHeader(state, onEvent)
                         when {
-                            state.isLoading || state.error != null -> CalendarLoadingError(state.error) {
-                                onEvent(
-                                    CalendarCommand.Refresh
-                                )
-                            }
+                            state.isLoading || state.error != null ->
+                                CalendarLoadingError(state.error) {
+                                    onEvent(CalendarCommand.Refresh)
+                                }
 
                             state.mode == CalendarMode.Month -> MonthCalendar(state, onEvent)
-                            state.mode == CalendarMode.Day && eventsOnDate(
-                                state.events, state.selectedDate
-                            ).isEmpty() -> EmptyCalendar(
-                                { onEvent(CalendarCommand.CreateEvent) },
-                                { onEvent(CalendarCommand.SelectTab(CalendarTab.Calendars)) })
+                            isEmptyDay ->
+                                EmptyCalendar(
+                                    { onEvent(CalendarCommand.CreateEvent) },
+                                    { onEvent(CalendarCommand.SelectTab(CalendarTab.Calendars)) },
+                                )
 
                             else -> {
                                 CalendarLegend(state)
-                                if (state.mode == CalendarMode.Day) DayCalendar(state, onEvent, now)
-                                else WeekCalendar(state, onEvent)
+                                if (state.mode == CalendarMode.Day) {
+                                    DayCalendar(state, onEvent, now)
+                                } else {
+                                    WeekCalendar(state, onEvent)
+                                }
                             }
                         }
                     }
                 }
             }
         }
-        Spacer(
-            Modifier
-                .fillMaxWidth()
-                .windowInsetsBottomHeight(WindowInsets.navigationBars)
-        )
     }
 }
 
@@ -128,7 +137,9 @@ fun CalendarScreen(
 private fun CalendarDayPreview() {
     WhoBusyTheme {
         CalendarScreen(
-            CalendarPreviewData.state, {}, CalendarPreviewData.date.atTime(11, 45)
+            CalendarPreviewData.state,
+            {},
+            CalendarPreviewData.date.atTime(11, 45),
         )
     }
 }

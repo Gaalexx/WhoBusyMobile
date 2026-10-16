@@ -1,7 +1,8 @@
 package com.project.whobusy.core.ui.components
 
 import androidx.compose.foundation.background
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -23,4 +24,6 @@ fun WhoBusyCalendarBadge() {
 
 @Preview
 @Composable
-private fun CalendarBadgePreview() { WhoBusyTheme { WhoBusyCalendarBadge() } }
+private fun CalendarBadgePreview() {
+    WhoBusyTheme { WhoBusyCalendarBadge() }
+}

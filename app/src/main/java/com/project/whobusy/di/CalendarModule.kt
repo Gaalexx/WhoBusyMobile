@@ -1,15 +1,15 @@
 package com.project.whobusy.di
 
 import com.project.whobusy.BuildConfig
-import com.project.whobusy.data.mock.MockAuthRepository
 import com.project.whobusy.data.mock.DemoAccount
-import com.project.whobusy.presentation.login.viewmodel.LoginDefaults
+import com.project.whobusy.data.mock.MockAuthRepository
 import com.project.whobusy.data.mock.MockCalendarRepository
 import com.project.whobusy.data.remote.ApiConfiguration
 import com.project.whobusy.data.repository.RemoteAuthRepository
 import com.project.whobusy.data.repository.RemoteCalendarRepository
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.CalendarRepository
+import com.project.whobusy.presentation.login.viewmodel.LoginDefaults
 import dagger.Module
 import dagger.Provides
 import dagger.hilt.InstallIn
@@ -22,9 +22,12 @@ import javax.inject.Singleton
 @InstallIn(SingletonComponent::class)
 object CalendarModule {
     @Provides
-    fun provideLoginDefaults(): LoginDefaults = if (BuildConfig.USE_MOCK_DATA) {
-        LoginDefaults(DemoAccount.EMAIL, DemoAccount.PASSWORD)
-    } else LoginDefaults()
+    fun provideLoginDefaults(): LoginDefaults =
+        if (BuildConfig.USE_MOCK_DATA) {
+            LoginDefaults(DemoAccount.EMAIL, DemoAccount.PASSWORD)
+        } else {
+            LoginDefaults()
+        }
 
     @Provides
     @Singleton

@@ -1,7 +1,8 @@
 package com.project.whobusy.core.ui.components
 
 import androidx.annotation.DrawableRes
-import androidx.compose.foundation.layout.*
+import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.size
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -13,10 +14,17 @@ import androidx.compose.ui.unit.dp
 import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
-enum class UiIcon(@param:DrawableRes val resource: Int) {
-    Calendar(R.drawable.ic_calendar), People(R.drawable.ic_people), Profile(R.drawable.ic_profile),
-    More(R.drawable.ic_more), Add(R.drawable.ic_add), Back(R.drawable.ic_back),
-    Check(R.drawable.ic_check), Edit(R.drawable.ic_edit),
+enum class UiIcon(
+    @param:DrawableRes val resource: Int,
+) {
+    Calendar(R.drawable.ic_calendar),
+    People(R.drawable.ic_people),
+    Profile(R.drawable.ic_profile),
+    More(R.drawable.ic_more),
+    Add(R.drawable.ic_add),
+    Back(R.drawable.ic_back),
+    Check(R.drawable.ic_check),
+    Edit(R.drawable.ic_edit),
 }
 
 @Composable

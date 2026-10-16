@@ -18,14 +18,16 @@ fun AppNavHost(userId: Int?) {
         NavDisplay(
             backStack = backStack,
             onBack = {},
-            entryDecorators = listOf(
-                rememberSaveableStateHolderNavEntryDecorator(),
-                rememberViewModelStoreNavEntryDecorator(),
-            ),
-            entryProvider = entryProvider {
-                entry<AppDestination.Login> { LoginRoot() }
-                entry<AppDestination.Calendar> { CalendarRoot() }
-            },
+            entryDecorators =
+                listOf(
+                    rememberSaveableStateHolderNavEntryDecorator(),
+                    rememberViewModelStoreNavEntryDecorator(),
+                ),
+            entryProvider =
+                entryProvider {
+                    entry<AppDestination.Login> { LoginRoot() }
+                    entry<AppDestination.Calendar> { CalendarRoot() }
+                },
         )
     }
 }

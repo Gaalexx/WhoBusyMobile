@@ -28,7 +28,7 @@ import androidx.compose.ui.unit.dp
 import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.ButtonStyle
 import com.project.whobusy.core.ui.components.WhoBusyButton
-import com.project.whobusy.core.ui.components.WhoBusyCalendarBadge
+import com.project.whobusy.core.ui.components.WhoBusyLogo
 import com.project.whobusy.core.ui.components.WhoBusyTextField
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.presentation.login.viewmodel.LoginCommand
@@ -51,7 +51,7 @@ fun LoginScreen(
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         Spacer(Modifier.height(84.dp))
-        WhoBusyCalendarBadge()
+        WhoBusyLogo()
         Spacer(Modifier.height(34.dp))
         Text(
             stringResource(R.string.app_name),

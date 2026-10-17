@@ -13,7 +13,9 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.WhoBusyTextButton
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import java.time.Instant
@@ -43,25 +45,27 @@ fun EventDateTimePicker(
         DatePickerDialog(
             onDismissRequest = onDismiss,
             confirmButton = {
-                WhoBusyTextButton(if (allDay) "Выбрать" else "Далее", {
+                WhoBusyTextButton(stringResource(if (allDay) R.string.action_select else R.string.action_next), {
                     datePicker.selectedDateMillis?.let { millis ->
                         val date = Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toLocalDate()
                         if (allDay) onSelected(date.atStartOfDay()) else selectedDate = date
                     }
                 })
             },
-            dismissButton = { WhoBusyTextButton("Отмена", onDismiss) },
+            dismissButton = { WhoBusyTextButton(stringResource(R.string.action_cancel), onDismiss) },
         ) { DatePicker(datePicker) }
     } else {
         val time = rememberTimePickerState(value.hour, value.minute, is24Hour = true)
         AlertDialog(
             onDismissRequest = onDismiss,
-            title = { Text("Время") },
+            title = { Text(stringResource(R.string.label_time)) },
             text = { TimePicker(time) },
             confirmButton = {
-                WhoBusyTextButton("Выбрать", { onSelected(selectedDate!!.atTime(time.hour, time.minute)) })
+                WhoBusyTextButton(stringResource(R.string.action_select), {
+                    onSelected(selectedDate!!.atTime(time.hour, time.minute))
+                })
             },
-            dismissButton = { WhoBusyTextButton("Отмена", onDismiss) },
+            dismissButton = { WhoBusyTextButton(stringResource(R.string.action_cancel), onDismiss) },
         )
     }
 }

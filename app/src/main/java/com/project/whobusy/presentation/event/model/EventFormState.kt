@@ -1,6 +1,8 @@
 package com.project.whobusy.presentation.event.model
 
+import androidx.annotation.StringRes
 import androidx.compose.runtime.saveable.listSaver
+import com.project.whobusy.R
 import com.project.whobusy.domain.model.CalendarEvent
 import com.project.whobusy.domain.model.EventDraft
 import com.project.whobusy.domain.model.EventStatus
@@ -15,15 +17,16 @@ data class EventFormState(
     val description: String = "",
     val allDay: Boolean = false,
     val status: EventStatus = EventStatus.BUSY,
-    val validationError: String? = null,
+    @param:StringRes val validationError: Int? = null,
 ) {
     fun toDraft() =
         EventDraft(title, LocalDateTime.parse(start), LocalDateTime.parse(end), description, location, allDay, status)
 
-    fun validate(): String? =
+    @StringRes
+    fun validate(): Int? =
         when {
-            title.isBlank() -> "Введите название события"
-            LocalDateTime.parse(end) <= LocalDateTime.parse(start) -> "Окончание должно быть позже начала"
+            title.isBlank() -> R.string.error_event_title_required
+            LocalDateTime.parse(end) <= LocalDateTime.parse(start) -> R.string.error_event_end_after_start
             else -> null
         }
 

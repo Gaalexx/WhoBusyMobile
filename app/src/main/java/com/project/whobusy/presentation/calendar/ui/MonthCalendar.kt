@@ -19,9 +19,12 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.WhoBusyDateCell
 import com.project.whobusy.core.ui.components.WhoBusyEventCard
 import com.project.whobusy.core.ui.components.WhoBusyTextButton
@@ -29,11 +32,8 @@ import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.core.ui.theme.calendarColor
 import com.project.whobusy.presentation.calendar.model.CalendarMode
 import com.project.whobusy.presentation.calendar.model.dayTitle
-import com.project.whobusy.presentation.calendar.model.eventTime
 import com.project.whobusy.presentation.calendar.model.eventsOnDate
 import com.project.whobusy.presentation.calendar.model.monthDates
-import com.project.whobusy.presentation.calendar.model.statusTitle
-import com.project.whobusy.presentation.calendar.model.weekLabels
 import com.project.whobusy.presentation.calendar.preview.CalendarPreviewData
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarState
@@ -57,7 +57,7 @@ fun MonthCalendar(
         item {
             Column(Modifier.background(Color.White).padding(horizontal = 12.dp, vertical = 8.dp)) {
                 Row {
-                    weekLabels.forEach {
+                    stringArrayResource(R.array.calendar_weekdays).forEach {
                         Text(
                             it,
                             Modifier.weight(1f).padding(vertical = 8.dp),
@@ -97,10 +97,17 @@ fun MonthCalendar(
             )
         }
         items(daily.take(2), key = { it.id }) { event ->
-            val owner = if (event.ownerId == state.user?.id) "Вы" else event.ownerName.substringBefore(" ")
+            val owner =
+                if (event.ownerId ==
+                    state.user?.id
+                ) {
+                    stringResource(R.string.label_you)
+                } else {
+                    event.ownerName.substringBefore(" ")
+                }
             WhoBusyEventCard(
                 event.title,
-                "${eventTime(event)} · $owner · ${statusTitle(event.status)}",
+                stringResource(R.string.event_summary, eventTime(event), owner, statusTitle(event.status)),
                 calendarColor(event.displayColor),
                 { onEvent(CalendarCommand.OpenEvent(event)) },
                 Modifier
@@ -113,7 +120,7 @@ fun MonthCalendar(
         if (daily.size > 2) {
             item {
                 WhoBusyTextButton(
-                    "Ещё событий: ${daily.size - 2}",
+                    stringResource(R.string.calendar_more_events, daily.size - 2),
                     { onEvent(CalendarCommand.SelectMode(CalendarMode.Day)) },
                     Modifier.padding(horizontal = 8.dp),
                 )
@@ -122,7 +129,7 @@ fun MonthCalendar(
         if (daily.isEmpty()) {
             item {
                 Text(
-                    "На этот день событий нет",
+                    stringResource(R.string.calendar_no_events_on_date),
                     Modifier.padding(horizontal = 20.dp),
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )

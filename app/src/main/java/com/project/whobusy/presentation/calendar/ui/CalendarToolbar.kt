@@ -10,7 +10,9 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.UiIcon
 import com.project.whobusy.core.ui.components.WhoBusyIconButton
 import com.project.whobusy.core.ui.components.WhoBusyTopBar
@@ -20,19 +22,19 @@ import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 @Composable
 fun CalendarToolbar(onEvent: (CalendarCommand) -> Unit) {
     var expanded by remember { mutableStateOf(false) }
-    WhoBusyTopBar("Календарь", action = {
+    WhoBusyTopBar(stringResource(R.string.screen_calendar), action = {
         Box {
             WhoBusyIconButton(
                 UiIcon.More,
-                "Меню календаря",
+                stringResource(R.string.calendar_menu),
                 { expanded = true },
                 tint = Color.White,
             )
             DropdownMenu(expanded, { expanded = false }) {
                 listOf(
-                    "Предыдущий период" to CalendarCommand.MovePeriod(-1),
-                    "Следующий период" to CalendarCommand.MovePeriod(1),
-                    "Обновить" to CalendarCommand.Refresh,
+                    stringResource(R.string.action_previous_period) to CalendarCommand.MovePeriod(-1),
+                    stringResource(R.string.action_next_period) to CalendarCommand.MovePeriod(1),
+                    stringResource(R.string.action_refresh) to CalendarCommand.Refresh,
                 ).forEach { (title, command) ->
                     DropdownMenuItem(
                         text = { Text(title) },

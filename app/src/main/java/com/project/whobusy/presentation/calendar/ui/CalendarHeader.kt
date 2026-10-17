@@ -18,8 +18,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringArrayResource
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.WhoBusyDateCell
 import com.project.whobusy.core.ui.components.WhoBusyTabs
 import com.project.whobusy.core.ui.components.WhoBusyTextButton
@@ -27,7 +30,6 @@ import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.presentation.calendar.model.CalendarMode
 import com.project.whobusy.presentation.calendar.model.dayTitle
 import com.project.whobusy.presentation.calendar.model.monthTitle
-import com.project.whobusy.presentation.calendar.model.weekLabels
 import com.project.whobusy.presentation.calendar.model.weekStart
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarState
@@ -41,7 +43,7 @@ fun CalendarHeader(
     onEvent: (CalendarCommand) -> Unit,
 ) {
     var showPicker by remember { mutableStateOf(false) }
-    WhoBusyTabs(CalendarMode.entries.map { it.title }, state.mode.ordinal) {
+    WhoBusyTabs(CalendarMode.entries.map { stringResource(it.titleRes) }, state.mode.ordinal) {
         onEvent(CalendarCommand.SelectMode(CalendarMode.entries[it]))
     }
     Row(
@@ -54,12 +56,12 @@ fun CalendarHeader(
             color = MaterialTheme.colorScheme.onSurface,
             textStyle = MaterialTheme.typography.titleMedium,
         )
-        WhoBusyTextButton("Сегодня", { onEvent(CalendarCommand.Today) })
+        WhoBusyTextButton(stringResource(R.string.action_today), { onEvent(CalendarCommand.Today) })
     }
     if (state.mode != CalendarMode.Month) {
         Row(Modifier.fillMaxWidth().background(Color.White).padding(horizontal = 12.dp, vertical = 4.dp)) {
             val start = weekStart(state.selectedDate)
-            weekLabels.forEachIndexed { index, label ->
+            stringArrayResource(R.array.calendar_weekdays).forEachIndexed { index, label ->
                 val date = start.plusDays(index.toLong())
                 WhoBusyDateCell(
                     date.dayOfMonth.toString(),
@@ -84,7 +86,7 @@ fun CalendarHeader(
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                WhoBusyTextButton("Выбрать", {
+                WhoBusyTextButton(stringResource(R.string.action_select), {
                     picker.selectedDateMillis?.let {
                         onEvent(
                             CalendarCommand.SelectDate(Instant.ofEpochMilli(it).atOffset(ZoneOffset.UTC).toLocalDate()),
@@ -93,7 +95,7 @@ fun CalendarHeader(
                     showPicker = false
                 })
             },
-            dismissButton = { WhoBusyTextButton("Отмена", { showPicker = false }) },
+            dismissButton = { WhoBusyTextButton(stringResource(R.string.action_cancel), { showPicker = false }) },
         ) { DatePicker(picker) }
     }
 }

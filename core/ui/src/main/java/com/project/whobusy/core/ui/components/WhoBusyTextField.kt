@@ -11,9 +11,11 @@ import androidx.compose.material3.TextFieldDefaults
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.input.VisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 @Composable
@@ -61,8 +63,13 @@ fun WhoBusyTextField(
 private fun TextFieldsPreview() {
     WhoBusyTheme {
         Column {
-            WhoBusyTextField("alex@example.com", {}, "Email")
-            WhoBusyTextField("alex", {}, "Email", error = "Введите корректный email")
+            WhoBusyTextField("alex@example.com", {}, stringResource(R.string.ui_email))
+            WhoBusyTextField(
+                "alex",
+                {},
+                stringResource(R.string.ui_email),
+                error = stringResource(R.string.ui_error_email_invalid),
+            )
         }
     }
 }

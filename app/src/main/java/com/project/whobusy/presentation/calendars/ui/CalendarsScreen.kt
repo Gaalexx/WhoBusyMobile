@@ -16,8 +16,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.WhoBusyPersonRow
 import com.project.whobusy.core.ui.theme.WhoBusyColors
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
@@ -41,7 +43,7 @@ fun CalendarsScreen(
     ) {
         item {
             Text(
-                "Ваша команда — в одном календаре\nВыберите, чьи события показывать рядом с вашими.",
+                stringResource(R.string.calendars_description),
                 Modifier
                     .padding(
                         16.dp,
@@ -52,7 +54,7 @@ fun CalendarsScreen(
                 style = MaterialTheme.typography.bodyMedium,
             )
             Text(
-                "МОЙ КАЛЕНДАРЬ",
+                stringResource(R.string.calendars_my_calendar),
                 Modifier.padding(20.dp),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelMedium,
@@ -60,13 +62,22 @@ fun CalendarsScreen(
         }
         state.user?.let { user ->
             item {
-                WhoBusyPersonRow(user.fullName, "Вы · Всегда отображается", calendarColor(user.color), true, {
-                }, enabled = false)
+                WhoBusyPersonRow(
+                    user.fullName,
+                    stringResource(
+                        R.string.calendars_self_subtitle,
+                    ),
+                    calendarColor(user.color),
+                    true,
+                    {
+                    },
+                    enabled = false,
+                )
             }
         }
         item {
             Text(
-                "ДОСТУПНЫ МНЕ",
+                stringResource(R.string.calendars_available),
                 Modifier.padding(20.dp),
                 color = MaterialTheme.colorScheme.primary,
                 style = MaterialTheme.typography.labelMedium,
@@ -78,9 +89,9 @@ fun CalendarsScreen(
                 if (user.id in
                     state.visibleOwnerIds
                 ) {
-                    "Календарь доступен"
+                    stringResource(R.string.calendars_visible)
                 } else {
-                    "Не отображается"
+                    stringResource(R.string.calendars_hidden)
                 },
                 calendarColor(user.color),
                 user.id in state.visibleOwnerIds,
@@ -90,12 +101,18 @@ fun CalendarsScreen(
         }
         item {
             Text(
-                "Здесь только календари, к которым вам открыли доступ. Свой всегда включён.",
+                stringResource(R.string.calendars_access_hint),
                 Modifier.padding(20.dp),
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
                 style = MaterialTheme.typography.bodyMedium,
             )
-            state.error?.let { Text(it, Modifier.padding(20.dp), color = MaterialTheme.colorScheme.error) }
+            state.error?.let {
+                Text(
+                    stringResource(it),
+                    Modifier.padding(20.dp),
+                    color = MaterialTheme.colorScheme.error,
+                )
+            }
         }
     }
 }

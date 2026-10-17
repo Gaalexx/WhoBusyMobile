@@ -24,17 +24,17 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.WhoBusyEventCard
 import com.project.whobusy.core.ui.components.WhoBusyEventChip
 import com.project.whobusy.core.ui.theme.WhoBusyColors
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.core.ui.theme.calendarColor
-import com.project.whobusy.presentation.calendar.model.eventTime
 import com.project.whobusy.presentation.calendar.model.eventsOnDate
 import com.project.whobusy.presentation.calendar.model.placeEvents
-import com.project.whobusy.presentation.calendar.model.statusTitle
 import com.project.whobusy.presentation.calendar.preview.CalendarPreviewData
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarState
@@ -54,13 +54,13 @@ fun DayCalendar(
             verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
         ) {
             Text(
-                "Весь день",
+                stringResource(R.string.label_all_day),
                 Modifier.width(80.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.onSurfaceVariant,
             )
             WhoBusyEventChip(
-                "${event.ownerName.substringBefore(" ")} · ${event.title}",
+                stringResource(R.string.event_owner_title, event.ownerName.substringBefore(" "), event.title),
                 calendarColor(event.displayColor),
                 { onEvent(CalendarCommand.OpenEvent(event)) },
                 Modifier.weight(1f),
@@ -99,10 +99,17 @@ fun DayCalendar(
                 val event = placement.event
                 val width = eventWidth / placement.laneCount
                 val height = (hourHeight * ((placement.endMinute - placement.startMinute) / 60f)).coerceAtLeast(48.dp)
-                val owner = if (event.ownerId == state.user?.id) "Вы" else event.ownerName.substringBefore(" ")
+                val owner =
+                    if (event.ownerId ==
+                        state.user?.id
+                    ) {
+                        stringResource(R.string.label_you)
+                    } else {
+                        event.ownerName.substringBefore(" ")
+                    }
                 WhoBusyEventCard(
                     event.title,
-                    "${eventTime(event)} · $owner · ${statusTitle(event.status)}",
+                    stringResource(R.string.event_summary, eventTime(event), owner, statusTitle(event.status)),
                     calendarColor(event.displayColor),
                     { onEvent(CalendarCommand.OpenEvent(event)) },
                     Modifier

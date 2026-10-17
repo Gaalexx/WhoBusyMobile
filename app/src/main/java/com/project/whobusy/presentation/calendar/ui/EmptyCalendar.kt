@@ -16,9 +16,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.ButtonStyle
 import com.project.whobusy.core.ui.components.WhoBusyButton
 import com.project.whobusy.core.ui.components.WhoBusyCalendarBadge
@@ -40,17 +42,21 @@ fun EmptyCalendar(
         Spacer(Modifier.height(36.dp))
         WhoBusyCalendarBadge()
         Spacer(Modifier.height(36.dp))
-        Text("Пока никаких событий", style = MaterialTheme.typography.titleLarge)
+        Text(stringResource(R.string.calendar_empty_title), style = MaterialTheme.typography.titleLarge)
         Spacer(Modifier.height(16.dp))
         Text(
-            "Добавьте свои планы или включите\nдоступные календари коллег.",
+            stringResource(R.string.calendar_empty_description),
             textAlign = TextAlign.Center,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(32.dp))
-        WhoBusyButton("Создать событие", onCreate)
+        WhoBusyButton(stringResource(R.string.action_create_event), onCreate)
         Spacer(Modifier.height(16.dp))
-        WhoBusyButton("Выбрать календари", onSelectCalendars, style = ButtonStyle.Secondary)
+        WhoBusyButton(
+            stringResource(R.string.calendar_select_calendars),
+            onSelectCalendars,
+            style = ButtonStyle.Secondary,
+        )
         Spacer(Modifier.height(90.dp))
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }

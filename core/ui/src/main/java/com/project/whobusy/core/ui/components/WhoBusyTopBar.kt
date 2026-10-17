@@ -14,8 +14,10 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyColors
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
@@ -34,7 +36,7 @@ fun WhoBusyTopBar(
         verticalAlignment = Alignment.CenterVertically,
     ) {
         if (onBack != null) {
-            WhoBusyIconButton(UiIcon.Back, "Назад", onBack, tint = Color.White)
+            WhoBusyIconButton(UiIcon.Back, stringResource(R.string.ui_action_back), onBack, tint = Color.White)
         } else {
             Spacer(Modifier.width(20.dp))
         }
@@ -47,6 +49,8 @@ fun WhoBusyTopBar(
 @Composable
 private fun TopBarPreview() {
     WhoBusyTheme {
-        WhoBusyTopBar("Календарь", action = { WhoBusyIconButton(UiIcon.More, "Меню", {}, tint = Color.White) })
+        WhoBusyTopBar(stringResource(R.string.ui_calendar), action = {
+            WhoBusyIconButton(UiIcon.More, stringResource(R.string.ui_action_menu), {}, tint = Color.White)
+        })
     }
 }

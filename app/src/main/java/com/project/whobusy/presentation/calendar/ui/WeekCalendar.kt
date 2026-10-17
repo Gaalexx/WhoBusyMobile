@@ -28,10 +28,12 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.core.ui.theme.calendarColor
 import com.project.whobusy.presentation.calendar.model.CalendarMode
@@ -54,7 +56,7 @@ fun WeekCalendar(
     Column(Modifier.fillMaxSize()) {
         WeekAllDayEvents(state, onEvent)
         Text(
-            "${start.dayOfMonth}–${start.plusDays(6).dayOfMonth} · Нажмите на день",
+            stringResource(R.string.calendar_week_hint, start.dayOfMonth, start.plusDays(6).dayOfMonth),
             Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,

@@ -18,9 +18,11 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyColors
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.core.ui.theme.calendarTint
@@ -61,7 +63,15 @@ fun WhoBusyEventCard(
 @Composable
 private fun EventCardPreview() {
     WhoBusyTheme {
-        WhoBusyEventCard("Синхронизация команды", "09:00–10:00 · Вы · Занят", WhoBusyColors.Primary, {
-        }, Modifier.fillMaxWidth().height(68.dp))
+        WhoBusyEventCard(
+            "Синхронизация команды",
+            stringResource(
+                R.string.ui_preview_event_subtitle,
+            ),
+            WhoBusyColors.Primary,
+            {
+            },
+            Modifier.fillMaxWidth().height(68.dp),
+        )
     }
 }

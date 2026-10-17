@@ -14,7 +14,9 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyColors
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
@@ -37,5 +39,5 @@ fun WhoBusyScreenLayout(
 @Preview(widthDp = 390, heightDp = 844)
 @Composable
 private fun ScreenLayoutPreview() {
-    WhoBusyTheme { WhoBusyScreenLayout(topBar = { WhoBusyTopBar("Календарь") }) {} }
+    WhoBusyTheme { WhoBusyScreenLayout(topBar = { WhoBusyTopBar(stringResource(R.string.ui_calendar)) }) {} }
 }

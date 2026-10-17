@@ -5,8 +5,10 @@ import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.runtime.Composable
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.WhoBusyEventChip
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.core.ui.theme.calendarColor
@@ -31,7 +33,7 @@ fun WeekAllDayEvents(
         items(events, key = { it.id }) { event ->
             val date = event.start.format(DateTimeFormatter.ofPattern("dd.MM"))
             WhoBusyEventChip(
-                "$date · ${event.ownerName.substringBefore(" ")} · ${event.title}",
+                stringResource(R.string.event_summary, date, event.ownerName.substringBefore(" "), event.title),
                 calendarColor(event.displayColor),
                 { onEvent(CalendarCommand.OpenEvent(event)) },
             )

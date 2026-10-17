@@ -1,5 +1,6 @@
 package com.project.whobusy.presentation.calendar.viewmodel
 
+import androidx.annotation.StringRes
 import com.project.whobusy.domain.model.CalendarEvent
 import com.project.whobusy.domain.model.CalendarUser
 import com.project.whobusy.presentation.calendar.model.CalendarMode
@@ -15,5 +16,5 @@ data class CalendarState(
     val accessibleOwnerIds: Set<Int> = emptySet(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
-    val error: String? = null,
+    @param:StringRes val error: Int? = null,
 )

@@ -21,8 +21,10 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.ButtonStyle
 import com.project.whobusy.core.ui.components.WhoBusyAvatar
 import com.project.whobusy.core.ui.components.WhoBusyButton
@@ -60,7 +62,7 @@ fun ProfileScreen(
             )
         }
         Text(
-            "КАЛЕНДАРЬ",
+            stringResource(R.string.profile_calendar_heading),
             Modifier.padding(20.dp),
             style = MaterialTheme.typography.labelMedium,
             color = MaterialTheme.colorScheme.primary,
@@ -71,9 +73,9 @@ fun ProfileScreen(
             verticalAlignment = Alignment.CenterVertically,
         ) {
             Column {
-                Text("Мой цвет")
+                Text(stringResource(R.string.profile_color))
                 Text(
-                    "Цвет ваших событий",
+                    stringResource(R.string.profile_color_description),
                     style = MaterialTheme.typography.bodyMedium,
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                 )
@@ -81,19 +83,35 @@ fun ProfileScreen(
             WhoBusyAvatar("", calendarColor(user.color), 24.dp)
         }
         Text(
-            "Роль: ${if (user.role == UserRole.ADMIN) "администратор" else "пользователь"}",
+            stringResource(
+                R.string.profile_role,
+                stringResource(
+                    if (user.role ==
+                        UserRole.ADMIN
+                    ) {
+                        R.string.profile_role_admin
+                    } else {
+                        R.string.profile_role_user
+                    },
+                ),
+            ),
             Modifier.padding(20.dp),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             style = MaterialTheme.typography.bodyMedium,
         )
         Text(
-            "Аккаунт создаёт администратор. Самостоятельная регистрация недоступна.",
+            stringResource(R.string.profile_registration_info),
             Modifier.padding(horizontal = 20.dp),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )
         Spacer(Modifier.height(48.dp))
-        WhoBusyButton("Выйти из аккаунта", onLogout, Modifier.padding(16.dp), style = ButtonStyle.Destructive)
+        WhoBusyButton(
+            stringResource(R.string.action_logout),
+            onLogout,
+            Modifier.padding(16.dp),
+            style = ButtonStyle.Destructive,
+        )
         Spacer(Modifier.height(90.dp))
         Spacer(Modifier.windowInsetsBottomHeight(WindowInsets.navigationBars))
     }

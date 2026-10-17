@@ -1,5 +1,6 @@
 package com.project.whobusy.presentation
 
+import com.project.whobusy.R
 import com.project.whobusy.data.mock.DemoAccount
 import com.project.whobusy.data.mock.MockAuthRepository
 import com.project.whobusy.data.session.SessionStore
@@ -42,7 +43,7 @@ class LoginViewModelTest {
             viewModel.onEvent(LoginCommand.PasswordChanged("incorrect"))
             viewModel.onEvent(LoginCommand.Submit)
             advanceUntilIdle()
-            assertEquals("Неверный email или пароль", viewModel.state.value.error)
+            assertEquals(R.string.error_login_credentials, viewModel.state.value.error)
             assertNull(session.getUser())
             viewModel.onEvent(LoginCommand.PasswordChanged(DemoAccount.PASSWORD))
             viewModel.onEvent(LoginCommand.Submit)

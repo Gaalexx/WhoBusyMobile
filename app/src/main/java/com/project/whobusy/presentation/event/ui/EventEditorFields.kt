@@ -12,15 +12,17 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.WhoBusySwitchRow
 import com.project.whobusy.core.ui.components.WhoBusyTextField
 import com.project.whobusy.core.ui.components.WhoBusyValueButton
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.domain.model.EventStatus
 import com.project.whobusy.presentation.calendar.model.calendarLocale
-import com.project.whobusy.presentation.calendar.model.statusTitle
+import com.project.whobusy.presentation.calendar.ui.statusTitle
 import com.project.whobusy.presentation.event.model.EventFormState
 import java.time.LocalDateTime
 import java.time.format.DateTimeFormatter
@@ -34,12 +36,16 @@ fun EventEditorFields(
     var showStatus by remember { mutableStateOf(false) }
     val formatter =
         DateTimeFormatter.ofPattern(
-            if (state.allDay) "d MMMM yyyy" else "d MMMM yyyy, HH:mm",
+            stringResource(if (state.allDay) R.string.event_date_pattern else R.string.event_date_time_pattern),
             calendarLocale,
         )
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        WhoBusyTextField(state.title, { onChange(state.copy(title = it, validationError = null)) }, "Название")
-        WhoBusySwitchRow("Весь день", state.allDay) { checked ->
+        WhoBusyTextField(
+            state.title,
+            { onChange(state.copy(title = it, validationError = null)) },
+            stringResource(R.string.event_title),
+        )
+        WhoBusySwitchRow(stringResource(R.string.label_all_day), state.allDay) { checked ->
             val date = LocalDateTime.parse(state.start).toLocalDate()
             onChange(
                 state.copy(
@@ -49,14 +55,18 @@ fun EventEditorFields(
                 ),
             )
         }
-        WhoBusyValueButton("Начало", LocalDateTime.parse(state.start).format(formatter), { editingStart = true })
         WhoBusyValueButton(
-            if (state.allDay) "Окончание (не включительно)" else "Окончание",
+            stringResource(R.string.event_start),
+            LocalDateTime.parse(state.start).format(formatter),
+            { editingStart = true },
+        )
+        WhoBusyValueButton(
+            stringResource(if (state.allDay) R.string.event_end_exclusive else R.string.event_end),
             LocalDateTime.parse(state.end).format(formatter),
             { editingStart = false },
         )
         Box {
-            WhoBusyValueButton("Статус", statusTitle(state.status), { showStatus = true })
+            WhoBusyValueButton(stringResource(R.string.event_status), statusTitle(state.status), { showStatus = true })
             DropdownMenu(showStatus, { showStatus = false }) {
                 EventStatus.entries.forEach { status ->
                     DropdownMenuItem(text = { Text(statusTitle(status)) }, onClick = {
@@ -66,8 +76,17 @@ fun EventEditorFields(
                 }
             }
         }
-        WhoBusyTextField(state.location, { onChange(state.copy(location = it)) }, "Место")
-        WhoBusyTextField(state.description, { onChange(state.copy(description = it)) }, "Описание", singleLine = false)
+        WhoBusyTextField(
+            state.location,
+            { onChange(state.copy(location = it)) },
+            stringResource(R.string.event_location),
+        )
+        WhoBusyTextField(
+            state.description,
+            { onChange(state.copy(description = it)) },
+            stringResource(R.string.event_description),
+            singleLine = false,
+        )
     }
     editingStart?.let { isStart ->
         EventDateTimePicker(

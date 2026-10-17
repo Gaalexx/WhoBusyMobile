@@ -7,8 +7,10 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 @Composable
@@ -27,5 +29,5 @@ fun WhoBusyTextButton(
 @Preview
 @Composable
 private fun TextButtonPreview() {
-    WhoBusyTheme { WhoBusyTextButton("Сегодня", {}) }
+    WhoBusyTheme { WhoBusyTextButton(stringResource(R.string.ui_action_today), {}) }
 }

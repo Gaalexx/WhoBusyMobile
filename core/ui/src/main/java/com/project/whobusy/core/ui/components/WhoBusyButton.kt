@@ -16,8 +16,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 enum class ButtonStyle { Primary, Secondary, Destructive }
@@ -64,9 +66,9 @@ fun WhoBusyButton(
 private fun ButtonsPreview() {
     WhoBusyTheme {
         Column(Modifier.padding(16.dp), verticalArrangement = Arrangement.spacedBy(12.dp)) {
-            ButtonStyle.entries.forEach { WhoBusyButton("Продолжить", {}, style = it) }
-            WhoBusyButton("Загрузка", {}, loading = true)
-            WhoBusyButton("Недоступно", {}, enabled = false)
+            ButtonStyle.entries.forEach { WhoBusyButton(stringResource(R.string.ui_action_continue), {}, style = it) }
+            WhoBusyButton(stringResource(R.string.ui_loading), {}, loading = true)
+            WhoBusyButton(stringResource(R.string.ui_unavailable), {}, enabled = false)
         }
     }
 }

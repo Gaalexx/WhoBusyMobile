@@ -3,6 +3,7 @@ package com.project.whobusy.presentation.calendar.viewmodel
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.project.whobusy.R
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.CalendarRepository
 import com.project.whobusy.presentation.calendar.model.CalendarMode
@@ -120,7 +121,7 @@ class CalendarViewModel
                         it.copy(
                             isSaving = false,
                             isLoading = false,
-                            error = "Не удалось сохранить изменения. Попробуйте ещё раз.",
+                            error = R.string.error_calendar_save,
                         )
                     }
                 }
@@ -140,7 +141,7 @@ class CalendarViewModel
                         throw exception
                     } catch (exception: Exception) {
                         _state.update {
-                            it.copy(isLoading = false, error = "Не удалось загрузить календарь. Проверьте подключение.")
+                            it.copy(isLoading = false, error = R.string.error_calendar_load)
                         }
                     }
                 }

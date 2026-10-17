@@ -23,10 +23,12 @@ import androidx.compose.runtime.getValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 data class UiDestination(
@@ -102,9 +104,9 @@ private fun BottomBarPreview() {
         Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
             val items =
                 listOf(
-                    UiDestination("Календарь", UiIcon.Calendar),
-                    UiDestination("Календари", UiIcon.People),
-                    UiDestination("Профиль", UiIcon.Profile),
+                    UiDestination(stringResource(R.string.ui_calendar), UiIcon.Calendar),
+                    UiDestination(stringResource(R.string.ui_calendars), UiIcon.People),
+                    UiDestination(stringResource(R.string.ui_profile), UiIcon.Profile),
                 )
             items.indices.forEach { selected ->
                 WhoBusyBottomBar(items = items, selected = selected, onSelect = {})

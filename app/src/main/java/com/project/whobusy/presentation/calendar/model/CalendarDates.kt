@@ -1,7 +1,6 @@
 package com.project.whobusy.presentation.calendar.model
 
 import com.project.whobusy.domain.model.CalendarEvent
-import com.project.whobusy.domain.model.EventStatus
 import java.time.DayOfWeek
 import java.time.LocalDate
 import java.time.YearMonth
@@ -10,7 +9,6 @@ import java.time.temporal.TemporalAdjusters
 import java.util.Locale
 
 val calendarLocale: Locale = Locale.forLanguageTag("ru")
-val weekLabels = listOf("ПН", "ВТ", "СР", "ЧТ", "ПТ", "СБ", "ВС")
 
 fun weekStart(date: LocalDate): LocalDate = date.with(TemporalAdjusters.previousOrSame(DayOfWeek.MONDAY))
 
@@ -28,21 +26,6 @@ fun monthTitle(date: LocalDate): String =
 fun dayTitle(date: LocalDate): String =
     date.format(DateTimeFormatter.ofPattern("EEEE, d MMMM", calendarLocale)).replaceFirstChar {
         it.titlecase(calendarLocale)
-    }
-
-fun eventTime(event: CalendarEvent): String =
-    if (event.allDay) {
-        "Весь день"
-    } else {
-        val format = DateTimeFormatter.ofPattern("HH:mm")
-        "${event.start.format(format)}–${event.end.format(format)}"
-    }
-
-fun statusTitle(status: EventStatus): String =
-    when (status) {
-        EventStatus.BUSY -> "Занят"
-        EventStatus.FREE -> "Свободен"
-        EventStatus.TENTATIVE -> "Под вопросом"
     }
 
 fun eventsOnDate(

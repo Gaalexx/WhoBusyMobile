@@ -14,8 +14,10 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.core.ui.theme.calendarColor
 import com.project.whobusy.core.ui.theme.calendarTint
@@ -33,7 +35,13 @@ fun CalendarLegend(state: CalendarState) {
         visible.forEach { user ->
             val color = calendarColor(user.color)
             Text(
-                if (user.id == state.user?.id) "Вы" else user.fullName.substringBefore(" "),
+                if (user.id ==
+                    state.user?.id
+                ) {
+                    stringResource(R.string.label_you)
+                } else {
+                    user.fullName.substringBefore(" ")
+                },
                 Modifier
                     .background(
                         calendarTint(color),
@@ -44,7 +52,7 @@ fun CalendarLegend(state: CalendarState) {
             )
         }
         Text(
-            "Календари: ${visible.size}",
+            stringResource(R.string.calendar_visible_count, visible.size),
             style = MaterialTheme.typography.bodySmall,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
         )

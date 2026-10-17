@@ -13,9 +13,11 @@ import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 @Composable
@@ -56,5 +58,16 @@ fun WhoBusyTabs(
 @Preview
 @Composable
 private fun TabsPreview() {
-    WhoBusyTheme { WhoBusyTabs(listOf("День", "Неделя", "Месяц"), 0, {}) }
+    WhoBusyTheme {
+        WhoBusyTabs(
+            listOf(
+                stringResource(R.string.ui_calendar_mode_day),
+                stringResource(R.string.ui_calendar_mode_week),
+                stringResource(R.string.ui_calendar_mode_month),
+            ),
+            0,
+            {
+            },
+        )
+    }
 }

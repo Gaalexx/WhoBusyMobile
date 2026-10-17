@@ -9,8 +9,10 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 @Composable
@@ -38,7 +40,11 @@ fun WhoBusyAddButton(
         containerColor = MaterialTheme.colorScheme.primary,
         contentColor = MaterialTheme.colorScheme.onPrimary,
     ) {
-        WhoBusyIcon(UiIcon.Add, "Создать событие", tint = MaterialTheme.colorScheme.onPrimary)
+        WhoBusyIcon(
+            UiIcon.Add,
+            stringResource(R.string.ui_action_create_event),
+            tint = MaterialTheme.colorScheme.onPrimary,
+        )
     }
 }
 
@@ -47,7 +53,7 @@ fun WhoBusyAddButton(
 private fun IconButtonsPreview() {
     WhoBusyTheme {
         Row {
-            WhoBusyIconButton(UiIcon.Back, "Назад", {})
+            WhoBusyIconButton(UiIcon.Back, stringResource(R.string.ui_action_back), {})
             WhoBusyAddButton({})
         }
     }

@@ -2,6 +2,7 @@ package com.project.whobusy.presentation.login.viewmodel
 
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.viewModelScope
+import com.project.whobusy.R
 import com.project.whobusy.domain.model.InvalidCredentialsException
 import com.project.whobusy.domain.repository.AuthRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
@@ -45,9 +46,9 @@ class LoginViewModel
                 ) {
                     null
                 } else {
-                    "Введите корректный email"
+                    R.string.error_login_email
                 }
-            val passwordError = if (current.password.isBlank()) "Введите пароль" else null
+            val passwordError = if (current.password.isBlank()) R.string.error_login_password else null
             _state.update { it.copy(emailError = emailError, passwordError = passwordError, error = null) }
             if (emailError != null || passwordError != null) return
             _state.update { it.copy(isLoading = true) }
@@ -61,9 +62,9 @@ class LoginViewModel
                                 isLoading = false,
                                 error =
                                     if (error is InvalidCredentialsException) {
-                                        "Неверный email или пароль"
+                                        R.string.error_login_credentials
                                     } else {
-                                        "Не удалось войти. Проверьте подключение и попробуйте снова."
+                                        R.string.error_login_connection
                                     },
                             )
                         }

@@ -1,14 +1,15 @@
 package com.project.whobusy.presentation.users.ui
 
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -60,36 +61,49 @@ fun UsersScreen(
             )
         }
     ) {
-        Column(
+        LazyColumn(
             Modifier
                 .fillMaxSize()
                 .testTag("users-content")
-                .verticalScroll(rememberScrollState())
                 .navigationBarsPadding(),
             verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
-            WhoBusyNotice(
-                stringResource(R.string.admin_accounts_notice_title),
-                stringResource(R.string.admin_accounts_notice_body),
-                Modifier.padding(16.dp),
-            )
+            item(key = "notice", contentType = "notice") {
+                WhoBusyNotice(
+                    stringResource(R.string.admin_accounts_notice_title),
+                    stringResource(R.string.admin_accounts_notice_body),
+                    Modifier.padding(16.dp),
+                )
+            }
             if (state.isLoading) {
-                CircularProgressIndicator(Modifier.align(Alignment.CenterHorizontally).padding(24.dp))
+                item(key = "loading", contentType = "loading") {
+                    Box(Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                        CircularProgressIndicator()
+                    }
+                }
             } else if (!state.isAdmin) {
-                Text(stringResource(R.string.admin_error_access), Modifier.padding(20.dp))
+                item(key = "access-error", contentType = "message") {
+                    Text(stringResource(R.string.admin_error_access), Modifier.padding(20.dp))
+                }
             } else {
-                state.error?.let {
-                    Text(stringResource(it), Modifier.padding(20.dp), color = MaterialTheme.colorScheme.error)
-                    WhoBusyButton(
-                        stringResource(R.string.action_retry),
-                        onRefresh,
-                        Modifier.padding(horizontal = 16.dp),
-                    )
+                state.error?.let { error ->
+                    item(key = "load-error", contentType = "message") {
+                        Text(stringResource(error), Modifier.padding(20.dp), color = MaterialTheme.colorScheme.error)
+                    }
+                    item(key = "retry", contentType = "button") {
+                        WhoBusyButton(
+                            stringResource(R.string.action_retry),
+                            onRefresh,
+                            Modifier.padding(horizontal = 16.dp),
+                        )
+                    }
                 }
                 if (state.users.isEmpty() && state.error == null) {
-                    Text(stringResource(R.string.admin_users_empty), Modifier.padding(20.dp))
+                    item(key = "empty", contentType = "message") {
+                        Text(stringResource(R.string.admin_users_empty), Modifier.padding(20.dp))
+                    }
                 }
-                state.users.forEach { user ->
+                items(state.users, key = { it.id }, contentType = { "user" }) { user ->
                     WhoBusyListRow(
                         title = user.fullName,
                         subtitle =
@@ -114,14 +128,16 @@ fun UsersScreen(
                         trailing = { WhoBusyIcon(UiIcon.Edit) },
                     )
                 }
-                Spacer(Modifier.height(24.dp))
-                WhoBusyButton(
-                    stringResource(R.string.admin_create_user),
-                    { onEdit(null) },
-                    Modifier.padding(horizontal = 16.dp),
-                )
+                item(key = "create-spacing", contentType = "spacing") { Spacer(Modifier.height(24.dp)) }
+                item(key = "create-user", contentType = "button") {
+                    WhoBusyButton(
+                        stringResource(R.string.admin_create_user),
+                        { onEdit(null) },
+                        Modifier.padding(horizontal = 16.dp),
+                    )
+                }
             }
-            Spacer(Modifier.height(24.dp))
+            item(key = "bottom-spacing", contentType = "spacing") { Spacer(Modifier.height(24.dp)) }
         }
     }
 }

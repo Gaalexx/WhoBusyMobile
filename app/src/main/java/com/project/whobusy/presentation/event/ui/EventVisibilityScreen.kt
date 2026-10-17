@@ -1,8 +1,10 @@
 package com.project.whobusy.presentation.event.ui
 
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -53,18 +55,22 @@ fun EventVisibilityScreen(
             WhoBusyButton(stringResource(R.string.plan_done), onBack, Modifier.padding(16.dp))
         },
     ) {
-        WhoBusyNotice(
-            state.form.title,
-            stringResource(R.string.plan_personal_summary, planDates(state.form)),
-            Modifier.padding(16.dp),
-        )
-        Spacer(Modifier.height(32.dp))
-        WhoBusySectionTitle(stringResource(R.string.plan_your_spaces), Modifier.padding(horizontal = 20.dp))
-        Spacer(Modifier.height(16.dp))
-        if (state.spaces.isEmpty()) {
-            Text(stringResource(R.string.plan_no_spaces), Modifier.padding(20.dp))
+        item(key = "header") {
+            Column {
+                WhoBusyNotice(
+                    state.form.title,
+                    stringResource(R.string.plan_personal_summary, planDates(state.form)),
+                    Modifier.padding(16.dp),
+                )
+                Spacer(Modifier.height(32.dp))
+                WhoBusySectionTitle(stringResource(R.string.plan_your_spaces), Modifier.padding(horizontal = 20.dp))
+                Spacer(Modifier.height(16.dp))
+                if (state.spaces.isEmpty()) {
+                    Text(stringResource(R.string.plan_no_spaces), Modifier.padding(20.dp))
+                }
+            }
         }
-        state.spaces.forEachIndexed { index, space ->
+        itemsIndexed(state.spaces, key = { _, space -> space.id }) { index, space ->
             val color = listOf(WhoBusyColors.Primary, WhoBusyColors.Purple, WhoBusyColors.Green)[index % 3]
             WhoBusyListRow(
                 title = space.name,
@@ -78,18 +84,22 @@ fun EventVisibilityScreen(
                 leading = { WhoBusyAvatar(space.name, color) },
             )
         }
-        Text(
-            stringResource(R.string.plan_visibility_default),
-            Modifier.padding(horizontal = 20.dp, vertical = 28.dp),
-            style = MaterialTheme.typography.bodyMedium,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
-        WhoBusyNotice(
-            stringResource(R.string.plan_spaces_overlap),
-            stringResource(R.string.plan_spaces_overlap_body),
-            Modifier.padding(horizontal = 16.dp),
-        )
-        Spacer(Modifier.height(16.dp))
+        item(key = "visibility-notice") {
+            Column {
+                Text(
+                    stringResource(R.string.plan_visibility_default),
+                    Modifier.padding(horizontal = 20.dp, vertical = 28.dp),
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                )
+                WhoBusyNotice(
+                    stringResource(R.string.plan_spaces_overlap),
+                    stringResource(R.string.plan_spaces_overlap_body),
+                    Modifier.padding(horizontal = 16.dp),
+                )
+                Spacer(Modifier.height(16.dp))
+            }
+        }
     }
 }
 
@@ -139,26 +149,34 @@ fun SpaceVisibilityScreen(
             )
         },
     ) {
-        Spacer(Modifier.height(36.dp))
-        listOf(
-            Triple(EventVisibility.Actors, R.string.plan_visibility_actors, R.string.plan_visibility_actors_body),
-            Triple(EventVisibility.Busy, R.string.plan_visibility_busy, R.string.plan_visibility_busy_body),
-            Triple(null, R.string.plan_visibility_none, R.string.plan_visibility_none_body),
-        ).forEachIndexed { index, (value, title, subtitle) ->
-            if (index > 0) Spacer(Modifier.height(22.dp))
-            WhoBusyListRow(
-                stringResource(title),
-                stringResource(subtitle),
-                { selected = value?.name },
-                trailing = { WhoBusySelectionMark(selected == value?.name) },
-            )
+        item {
+            Column {
+                Spacer(Modifier.height(36.dp))
+                listOf(
+                    Triple(
+                        EventVisibility.Actors,
+                        R.string.plan_visibility_actors,
+                        R.string.plan_visibility_actors_body
+                    ),
+                    Triple(EventVisibility.Busy, R.string.plan_visibility_busy, R.string.plan_visibility_busy_body),
+                    Triple(null, R.string.plan_visibility_none, R.string.plan_visibility_none_body),
+                ).forEachIndexed { index, (value, title, subtitle) ->
+                    if (index > 0) Spacer(Modifier.height(22.dp))
+                    WhoBusyListRow(
+                        stringResource(title),
+                        stringResource(subtitle),
+                        { selected = value?.name },
+                        trailing = { WhoBusySelectionMark(selected == value?.name) },
+                    )
+                }
+                Spacer(Modifier.height(54.dp))
+                WhoBusyNotice(
+                    stringResource(R.string.plan_visibility_public_notice),
+                    stringResource(R.string.plan_visibility_public_body),
+                    Modifier.padding(horizontal = 16.dp),
+                )
+            }
         }
-        Spacer(Modifier.height(54.dp))
-        WhoBusyNotice(
-            stringResource(R.string.plan_visibility_public_notice),
-            stringResource(R.string.plan_visibility_public_body),
-            Modifier.padding(horizontal = 16.dp),
-        )
     }
 }
 

@@ -1,13 +1,14 @@
 package com.project.whobusy.presentation.spaces.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -44,80 +45,96 @@ fun InviteMemberScreen(
     var selectingRole by rememberSaveable { mutableStateOf(false) }
     val canManage = state.space?.myRole?.canManage == true
     WhoBusyScreenLayout(topBar = { WhoBusyTopBar(stringResource(R.string.spaces_invite), onBack) }) {
-        Column(Modifier.fillMaxSize().imePadding().verticalScroll(rememberScrollState())) {
-            SpacesFeedback(state.isLoading || state.isSaving, state.error, state.message)
+        LazyColumn(Modifier.fillMaxSize().imePadding(), contentPadding = PaddingValues(bottom = 32.dp)) {
+            item(key = "feedback") {
+                SpacesFeedback(state.isLoading || state.isSaving, state.error, state.message)
+            }
             if (canManage) {
-                WhoBusySectionTitle(
-                    stringResource(R.string.spaces_key_section),
-                    Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
-                )
-                WhoBusyValueButton(
-                    stringResource(R.string.spaces_key_label), state.space?.inviteCode.orEmpty(),
-                    {
-                        onEvent(SpacesCommand.CopyCode)
-                    },
-                    Modifier.padding(horizontal = 16.dp)
-                )
-                Spacer(Modifier.height(16.dp))
-                WhoBusyButton(
-                    stringResource(R.string.spaces_copy_key),
-                    {
-                        onEvent(SpacesCommand.CopyCode)
-                    },
-                    Modifier.padding(horizontal = 16.dp), style = ButtonStyle.Secondary, enabled = !state.isSaving
-                )
-                WhoBusyTextButton(
-                    stringResource(R.string.spaces_regenerate_key),
-                    {
-                        onEvent(SpacesCommand.RegenerateCode)
-                    },
-                    Modifier.padding(horizontal = 8.dp)
-                )
-                Text(
-                    stringResource(R.string.spaces_key_hint),
-                    Modifier.padding(horizontal = 20.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
-                Spacer(Modifier.height(28.dp))
-                WhoBusySectionTitle(
-                    stringResource(R.string.spaces_login_section),
-                    Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
-                )
-                WhoBusyTextField(
-                    state.login,
-                    {
-                        onEvent(SpacesCommand.LoginChanged(it))
-                    },
-                    stringResource(
-                        R.string.spaces_login,
-                    ),
-                    Modifier.padding(horizontal = 16.dp),
-                    enabled = !state.isSaving,
-                )
-                Spacer(Modifier.height(16.dp))
-                WhoBusyListRow(
-                    stringResource(
-                        R.string.spaces_role_after_accept,
-                    ),
-                    spaceRoleTitle(state.selectedRole),
-                    onClick = {
-                        if (!state.isSaving) {
-                            selectingRole =
-                                true
-                        }
-                    },
-                )
-                Spacer(Modifier.height(18.dp))
-                WhoBusyButton(
-                    stringResource(R.string.spaces_send_invitation),
-                    {
-                        onEvent(SpacesCommand.Invite)
-                    },
-                    Modifier.padding(horizontal = 16.dp), enabled = !state.isSaving
-                )
-                Spacer(Modifier.height(30.dp))
-                state.pendingInvitations.forEach { invitation ->
+                item(key = "invite-key") {
+                    Column {
+                        WhoBusySectionTitle(
+                            stringResource(R.string.spaces_key_section),
+                            Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
+                        )
+                        WhoBusyValueButton(
+                            stringResource(R.string.spaces_key_label), state.space?.inviteCode.orEmpty(),
+                            {
+                                onEvent(SpacesCommand.CopyCode)
+                            },
+                            Modifier.padding(horizontal = 16.dp)
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        WhoBusyButton(
+                            stringResource(R.string.spaces_copy_key),
+                            {
+                                onEvent(SpacesCommand.CopyCode)
+                            },
+                            Modifier.padding(horizontal = 16.dp),
+                            style = ButtonStyle.Secondary,
+                            enabled = !state.isSaving
+                        )
+                        WhoBusyTextButton(
+                            stringResource(R.string.spaces_regenerate_key),
+                            {
+                                onEvent(SpacesCommand.RegenerateCode)
+                            },
+                            Modifier.padding(horizontal = 8.dp)
+                        )
+                        Text(
+                            stringResource(R.string.spaces_key_hint),
+                            Modifier.padding(horizontal = 20.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(Modifier.height(28.dp))
+                    }
+                }
+                item(key = "invite-form") {
+                    Column {
+                        WhoBusySectionTitle(
+                            stringResource(R.string.spaces_login_section),
+                            Modifier.padding(horizontal = 20.dp, vertical = 20.dp),
+                        )
+                        WhoBusyTextField(
+                            state.login,
+                            {
+                                onEvent(SpacesCommand.LoginChanged(it))
+                            },
+                            stringResource(
+                                R.string.spaces_login,
+                            ),
+                            Modifier.padding(horizontal = 16.dp),
+                            enabled = !state.isSaving,
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        WhoBusyListRow(
+                            stringResource(
+                                R.string.spaces_role_after_accept,
+                            ),
+                            spaceRoleTitle(state.selectedRole),
+                            onClick = {
+                                if (!state.isSaving) {
+                                    selectingRole =
+                                        true
+                                }
+                            },
+                        )
+                        Spacer(Modifier.height(18.dp))
+                        WhoBusyButton(
+                            stringResource(R.string.spaces_send_invitation),
+                            {
+                                onEvent(SpacesCommand.Invite)
+                            },
+                            Modifier.padding(horizontal = 16.dp), enabled = !state.isSaving
+                        )
+                        Spacer(Modifier.height(30.dp))
+                    }
+                }
+                items(
+                    state.pendingInvitations,
+                    key = { "invitation:${it.id}" },
+                    contentType = { "invitation" },
+                ) { invitation ->
                     val canCancel = state.space?.myRole == SpaceRole.Admin || invitation.role != SpaceRole.Admin
                     WhoBusyListRow(
                         stringResource(R.string.spaces_pending, invitation.login),
@@ -133,7 +150,6 @@ fun InviteMemberScreen(
                     )
                 }
             }
-            Spacer(Modifier.height(32.dp))
         }
     }
     if (selectingRole) {

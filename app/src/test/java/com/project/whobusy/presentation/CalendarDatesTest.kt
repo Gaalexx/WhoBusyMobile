@@ -44,6 +44,26 @@ class CalendarDatesTest {
     }
 
     @Test
+    fun multiDayEventIsClippedToEachDaysTimeBoundaries() {
+        val date = CalendarPreviewData.date
+        val event = CalendarPreviewData.events.first().copy(
+            start = date.minusDays(1).atTime(23, 30),
+            end = date.plusDays(1).atTime(0, 30),
+        )
+
+        val firstDay = placeEvents(listOf(event), date.minusDays(1)).single()
+        val fullDay = placeEvents(listOf(event), date).single()
+        val lastDay = placeEvents(listOf(event), date.plusDays(1)).single()
+
+        assertEquals(1_410, firstDay.startMinute)
+        assertEquals(1_440, firstDay.endMinute)
+        assertEquals(0, fullDay.startMinute)
+        assertEquals(1_440, fullDay.endMinute)
+        assertEquals(0, lastDay.startMinute)
+        assertEquals(30, lastDay.endMinute)
+    }
+
+    @Test
     fun eventEditorRejectsBlankTitleAndReversedTime() {
         val state = EventFormState.initial(CalendarPreviewData.date, null)
         assertNotNull(state.validate())

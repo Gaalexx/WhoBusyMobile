@@ -95,77 +95,84 @@ fun EventDetailsScreen(
             }
         },
     ) {
-        if (event.busyOnly) {
-            Column(Modifier.fillMaxWidth().padding(top = 72.dp), horizontalAlignment = Alignment.CenterHorizontally) {
-                WhoBusyIcon(
-                    UiIcon.Lock,
-                    modifier = Modifier.size(44.dp),
-                    tint = MaterialTheme.colorScheme.onSurfaceVariant,
-                )
-                Spacer(Modifier.height(60.dp))
-                Text(stringResource(R.string.plan_busy), style = MaterialTheme.typography.headlineMedium)
-                Spacer(Modifier.height(12.dp))
-                Text(
-                    event.ownerName,
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyLarge,
-                )
-                Spacer(Modifier.height(48.dp))
-            }
-            PlanDateRow(event, busyOnly = true)
-            Spacer(Modifier.height(48.dp))
-            WhoBusyNotice(
-                stringResource(R.string.plan_busy_notice),
-                stringResource(R.string.plan_busy_notice_body),
-                Modifier.padding(horizontal = 16.dp),
-            )
-        } else {
-            Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp)) {
-                Text(
-                    space?.name ?: stringResource(R.string.plan_personal),
-                    Modifier
-                        .background(
-                            MaterialTheme.colorScheme.primaryContainer,
-                            RoundedCornerShape(14.dp),
-                        ).padding(horizontal = 24.dp, vertical = 6.dp),
-                    color = MaterialTheme.colorScheme.primary,
-                    style = MaterialTheme.typography.bodySmall,
-                    textAlign = TextAlign.Center,
-                )
-                Spacer(Modifier.height(20.dp))
-                Text(event.title, style = MaterialTheme.typography.headlineMedium)
-                Spacer(Modifier.height(14.dp))
-            }
-            PlanDateRow(event)
-            Spacer(Modifier.height(2.dp))
-            WhoBusyListRow(
-                event.location.ifBlank { stringResource(R.string.plan_no_location) },
-                event.description.ifBlank { stringResource(R.string.plan_no_description) },
-            )
-            Spacer(Modifier.height(2.dp))
-            WhoBusyListRow(
-                recurrenceTitle(event.recurrenceRule),
-                if (event.recurrenceRule == null) null else stringResource(R.string.plan_series_hint),
-            )
-            WhoBusySectionTitle(
-                stringResource(R.string.plan_visibility_heading),
-                Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
-            )
-            when {
-                space != null -> WhoBusyListRow(space.name, stringResource(R.string.plan_visibility_public))
-                event.spaceId == null && event.canEdit && spaces.isNotEmpty() -> {
-                    val items =
-                        spaces.map { item ->
-                            stringResource(
-                                R.string.plan_shared_item,
-                                item.name,
-                                visibilityTitle(event.shares.firstOrNull { it.spaceId == item.id }?.visibility),
-                            )
+        item {
+            Column {
+                if (event.busyOnly) {
+                    Column(
+                        Modifier.fillMaxWidth().padding(top = 72.dp),
+                        horizontalAlignment = Alignment.CenterHorizontally
+                    ) {
+                        WhoBusyIcon(
+                            UiIcon.Lock,
+                            modifier = Modifier.size(44.dp),
+                            tint = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                        Spacer(Modifier.height(60.dp))
+                        Text(stringResource(R.string.plan_busy), style = MaterialTheme.typography.headlineMedium)
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            event.ownerName,
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyLarge,
+                        )
+                        Spacer(Modifier.height(48.dp))
+                    }
+                    PlanDateRow(event, busyOnly = true)
+                    Spacer(Modifier.height(48.dp))
+                    WhoBusyNotice(
+                        stringResource(R.string.plan_busy_notice),
+                        stringResource(R.string.plan_busy_notice_body),
+                        Modifier.padding(horizontal = 16.dp),
+                    )
+                } else {
+                    Column(Modifier.fillMaxWidth().padding(horizontal = 20.dp, vertical = 20.dp)) {
+                        Text(
+                            space?.name ?: stringResource(R.string.plan_personal),
+                            Modifier
+                                .background(
+                                    MaterialTheme.colorScheme.primaryContainer,
+                                    RoundedCornerShape(14.dp),
+                                ).padding(horizontal = 24.dp, vertical = 6.dp),
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.bodySmall,
+                            textAlign = TextAlign.Center,
+                        )
+                        Spacer(Modifier.height(20.dp))
+                        Text(event.title, style = MaterialTheme.typography.headlineMedium)
+                        Spacer(Modifier.height(14.dp))
+                    }
+                    PlanDateRow(event)
+                    Spacer(Modifier.height(2.dp))
+                    WhoBusyListRow(
+                        event.location.ifBlank { stringResource(R.string.plan_no_location) },
+                        event.description.ifBlank { stringResource(R.string.plan_no_description) },
+                    )
+                    Spacer(Modifier.height(2.dp))
+                    WhoBusyListRow(
+                        recurrenceTitle(event.recurrenceRule),
+                        if (event.recurrenceRule == null) null else stringResource(R.string.plan_series_hint),
+                    )
+                    WhoBusySectionTitle(
+                        stringResource(R.string.plan_visibility_heading),
+                        Modifier.padding(horizontal = 20.dp, vertical = 24.dp),
+                    )
+                    when {
+                        space != null -> WhoBusyListRow(space.name, stringResource(R.string.plan_visibility_public))
+                        event.spaceId == null && event.canEdit && spaces.isNotEmpty() -> {
+                            val items =
+                                spaces.map { item ->
+                                    stringResource(
+                                        R.string.plan_shared_item,
+                                        item.name,
+                                        visibilityTitle(event.shares.firstOrNull { it.spaceId == item.id }?.visibility),
+                                    )
+                                }
+                            WhoBusyListRow(items.first(), items.drop(1).joinToString("; ").ifBlank { null })
                         }
-                    WhoBusyListRow(items.first(), items.drop(1).joinToString("; ").ifBlank { null })
-                }
 
-                else -> WhoBusyListRow(stringResource(R.string.plan_author, event.ownerName))
+                        else -> WhoBusyListRow(stringResource(R.string.plan_author, event.ownerName))
+                    }
+                }
             }
         }
     }

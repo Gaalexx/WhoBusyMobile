@@ -1,13 +1,14 @@
 package com.project.whobusy.presentation.spaces.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -80,57 +81,70 @@ fun SpaceDetailsScreen(
             )
         }
     ) {
-        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
-            SpacesFeedback(state.isLoading, state.error)
+        LazyColumn(Modifier.fillMaxSize(), contentPadding = PaddingValues(bottom = 32.dp)) {
+            item(key = "feedback") {
+                SpacesFeedback(state.isLoading, state.error)
+            }
             if (space != null) {
                 if (space.myRole.canManage && !state.showPlans) {
-                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
-                        Spacer(Modifier.height(24.dp))
-                        WhoBusyAvatar(space.name.take(1), spaceColor(space.id), size = 80.dp)
-                        Spacer(Modifier.height(20.dp))
-                        Text(space.name, style = MaterialTheme.typography.titleLarge)
-                        Text(
-                            stringResource(
-                                R.string.spaces_member_role,
-                                space.memberCount,
-                                spaceRoleTitle(space.myRole),
-                            ),
-                            Modifier.padding(top = 8.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodyMedium,
-                        )
-                        Spacer(Modifier.height(32.dp))
-                        WhoBusyButton(
-                            stringResource(R.string.spaces_open_plans),
-                            {
-                                onEvent(SpacesCommand.ShowPlans)
-                            },
-                            Modifier.padding(horizontal = 16.dp)
-                        )
-                        Spacer(Modifier.height(32.dp))
+                    item(key = "summary") {
+                        Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Spacer(Modifier.height(24.dp))
+                            WhoBusyAvatar(space.name.take(1), spaceColor(space.id), size = 80.dp)
+                            Spacer(Modifier.height(20.dp))
+                            Text(space.name, style = MaterialTheme.typography.titleLarge)
+                            Text(
+                                stringResource(
+                                    R.string.spaces_member_role,
+                                    space.memberCount,
+                                    spaceRoleTitle(space.myRole),
+                                ),
+                                Modifier.padding(top = 8.dp),
+                                color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                style = MaterialTheme.typography.bodyMedium,
+                            )
+                            Spacer(Modifier.height(32.dp))
+                            WhoBusyButton(
+                                stringResource(R.string.spaces_open_plans),
+                                {
+                                    onEvent(SpacesCommand.ShowPlans)
+                                },
+                                Modifier.padding(horizontal = 16.dp)
+                            )
+                            Spacer(Modifier.height(32.dp))
+                        }
                     }
                 } else {
-                    WhoBusyNotice(
-                        stringResource(R.string.spaces_access_title),
-                        stringResource(R.string.spaces_access_body),
-                        Modifier.padding(16.dp),
-                    )
-                    val day = state.today
-                    WhoBusySectionTitle(
-                        stringResource(
-                            R.string.spaces_today,
-                            day.format(DateTimeFormatter.ofPattern("d MMMM", calendarLocale)).uppercase(calendarLocale),
-                        ),
-                        Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
-                    )
-                    if (state.events.isEmpty()) {
-                        Text(
-                            stringResource(R.string.spaces_no_plans),
-                            Modifier.padding(20.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
+                    item(key = "plans-header") {
+                        Column {
+                            WhoBusyNotice(
+                                stringResource(R.string.spaces_access_title),
+                                stringResource(R.string.spaces_access_body),
+                                Modifier.padding(16.dp),
+                            )
+                            val day = state.today
+                            WhoBusySectionTitle(
+                                stringResource(
+                                    R.string.spaces_today,
+                                    day.format(DateTimeFormatter.ofPattern("d MMMM", calendarLocale))
+                                        .uppercase(calendarLocale),
+                                ),
+                                Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                            )
+                            if (state.events.isEmpty()) {
+                                Text(
+                                    stringResource(R.string.spaces_no_plans),
+                                    Modifier.padding(20.dp),
+                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                )
+                            }
+                        }
                     }
-                    state.events.forEach { event ->
+                    items(
+                        state.events,
+                        key = { "event:${it.id}:${it.start}" },
+                        contentType = { "event" },
+                    ) { event ->
                         val visibility =
                             when {
                                 event.busyOnly -> stringResource(R.string.plan_busy_notice)
@@ -152,51 +166,64 @@ fun SpaceDetailsScreen(
                             Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().height(82.dp),
                         )
                     }
-                    Spacer(Modifier.height(40.dp))
-                    WhoBusyButton(
-                        stringResource(R.string.spaces_add_plan),
-                        {
-                            onCreateEvent(space.id)
-                        },
-                        Modifier.padding(horizontal = 16.dp)
-                    )
-                    Spacer(Modifier.height(32.dp))
+                    item(key = "create-plan") {
+                        Column {
+                            Spacer(Modifier.height(40.dp))
+                            WhoBusyButton(
+                                stringResource(R.string.spaces_add_plan),
+                                {
+                                    onCreateEvent(space.id)
+                                },
+                                Modifier.padding(horizontal = 16.dp)
+                            )
+                            Spacer(Modifier.height(32.dp))
+                        }
+                    }
                 }
-                WhoBusyListRow(
-                    stringResource(R.string.spaces_members),
-                    stringResource(
-                        if (space.myRole.canManage) R.string.spaces_members_manage else R.string.spaces_members_view,
-                        space.memberCount,
-                    ),
-                    onMembers,
-                )
+                item(key = "members") {
+                    WhoBusyListRow(
+                        stringResource(R.string.spaces_members),
+                        stringResource(
+                            if (space.myRole.canManage) R.string.spaces_members_manage else R.string.spaces_members_view,
+                            space.memberCount,
+                        ),
+                        onMembers,
+                    )
+                }
                 if (space.myRole.canManage) {
-                    WhoBusyListRow(
-                        stringResource(R.string.spaces_invite),
-                        stringResource(R.string.spaces_invite_hint),
-                        onInvite,
-                    )
-                    WhoBusyListRow(
-                        stringResource(R.string.spaces_settings),
-                        stringResource(R.string.spaces_settings_hint),
-                        onSettings,
-                    )
-                    WhoBusyNotice(
-                        stringResource(R.string.spaces_visibility_title),
-                        stringResource(R.string.spaces_visibility_body),
-                        Modifier.padding(horizontal = 16.dp, vertical = 40.dp),
-                    )
+                    item(key = "management") {
+                        Column {
+                            WhoBusyListRow(
+                                stringResource(R.string.spaces_invite),
+                                stringResource(R.string.spaces_invite_hint),
+                                onInvite,
+                            )
+                            WhoBusyListRow(
+                                stringResource(R.string.spaces_settings),
+                                stringResource(R.string.spaces_settings_hint),
+                                onSettings,
+                            )
+                            WhoBusyNotice(
+                                stringResource(R.string.spaces_visibility_title),
+                                stringResource(R.string.spaces_visibility_body),
+                                Modifier.padding(horizontal = 16.dp, vertical = 40.dp),
+                            )
+                        }
+                    }
                 } else {
-                    Spacer(Modifier.height(64.dp))
-                    WhoBusyButton(
-                        stringResource(R.string.spaces_leave),
-                        onLeave,
-                        Modifier.padding(horizontal = 16.dp),
-                        style = ButtonStyle.Destructive,
-                    )
+                    item(key = "leave") {
+                        Column {
+                            Spacer(Modifier.height(64.dp))
+                            WhoBusyButton(
+                                stringResource(R.string.spaces_leave),
+                                onLeave,
+                                Modifier.padding(horizontal = 16.dp),
+                                style = ButtonStyle.Destructive,
+                            )
+                        }
+                    }
                 }
             }
-            Spacer(Modifier.height(32.dp))
         }
     }
 }

@@ -1,32 +1,54 @@
 # Источник интерфейса
 
-Макет: [FunProject — мобильный календарь](https://www.figma.com/design/dDatbSFzoHbGIn2PWUqZnx/FunProject?node-id=0-1).
-
-Использован предоставленный архив `/home/gaalex/Загрузки/FunProject-Mobile-Figma.zip`: `Overview.png`, SVG из `screens/`, общий SVG и README. Figma MCP был недоступен из-за лимита, но локальный экспорт позволил продолжить реализацию. По README архива SVG могут немного отличаться от нативного Figma-файла; точное соответствие нативным слоям не заявляется.
+Актуальный макет: [WhoBusy · Пространства, страница 02](https://www.figma.com/design/dDatbSFzoHbGIn2PWUqZnx?node-id=14-90).
+Используются 28 экранов этой страницы. Контекст слоёв и screenshots получены через Figma MCP; прежняя страница 0:1 и архив FunProject-Mobile-Figma.zip описывают старую механику календарей коллег.
 
 ## Соответствие экранов
 
-| Экспорт | Реализация |
-| --- | --- |
-| 01 — вход | LoginScreen: поля, валидация, загрузка, сообщение администратора |
-| 02 — день | DayCalendar: временная шкала, all-day, события владельцев, FAB |
-| 03 — неделя | WeekCalendar: 7 столбцов, переход к дню; добавлена all-day лента |
-| 04 — месяц | MonthCalendar: сетка, цветные точки, события выбранного дня |
-| 05 — выбор календарей | CalendarsScreen: свой календарь и доступные коллеги |
-| 07/08/10 — событие | EventDetailsScreen, EventEditorScreen, собственное/чужое событие |
-| 11 — профиль | ProfileScreen адаптирован к обычному пользователю, без админ-функций |
-| 15 — пустой день | EmptyCalendar с действиями создания/выбора календарей |
+Пути относительно `app/src/main/java/com/project/whobusy/presentation/`.
 
-Остальные административные экраны и управление доступом не входят в текущую реализацию.
+| № / Figma node | Состояние | Реализация |
+| --- | --- | --- |
+| 01 / 14:190 | Вход по логину или email | `login/ui/LoginScreen.kt` |
+| 02 / 14:212 | Регистрация | `register/ui/RegistrationScreen.kt` |
+| 03 / 14:244 | Общая доска · день | `calendar/ui/CalendarScreen.kt`, `calendar/ui/DayCalendar.kt` |
+| 04 / 14:334 | Настройки доски | `board/ui/BoardSettingsScreen.kt` |
+| 05 / 14:389 | Общая доска · неделя | `calendar/ui/WeekCalendar.kt` |
+| 06 / 14:488 | Общая доска · месяц | `calendar/ui/MonthCalendar.kt` |
+| 07 / 14:592 | Мои пространства | `spaces/ui/SpacesScreen.kt` |
+| 08 / 14:647 | Создать пространство | `spaces/ui/SpaceEntryScreen.kt` |
+| 09 / 14:672 | Вступить по ключу | `spaces/ui/SpaceEntryScreen.kt` |
+| 10 / 14:696 | Входящие приглашения | `spaces/ui/InvitationsScreen.kt` |
+| 11 / 14:730 | Пространство · администратор | `spaces/ui/SpaceDetailsScreen.kt` |
+| 12 / 14:761 | Участники | `spaces/ui/SpaceMembersScreen.kt` |
+| 13 / 14:815 | Роль участника | `spaces/ui/MemberRoleScreen.kt` |
+| 14 / 14:856 | Приглашение по логину и ключ | `spaces/ui/InviteMemberScreen.kt` |
+| 15 / 14:887 | Настройки пространства | `spaces/ui/SpaceSettingsScreen.kt` |
+| 16 / 14:913 | Новый личный план | `event/ui/EventEditorScreen.kt` |
+| 17 / 14:956 | Видимость по пространствам | `event/ui/EventVisibilityScreen.kt` |
+| 18 / 14:995 | Выбор видимости | `event/ui/EventVisibilityScreen.kt` (SpaceVisibilityScreen) |
+| 19 / 14:1025 | План внутри пространства | `event/ui/EventEditorScreen.kt` |
+| 20 / 14:1059 | Подробности личного плана | `event/ui/EventDetailsScreen.kt` |
+| 21 / 14:1094 | Только занятость | `event/ui/EventDetailsScreen.kt` |
+| 22 / 14:1119 | Профиль | `profile/ui/ProfileScreen.kt` |
+| 23 / 14:1161 | Редактирование профиля | `profile/ui/ProfileEditorScreen.kt` |
+| 24 / 14:1201 | Даты, весь день, статус, повтор | `event/ui/EventDatesScreen.kt` |
+| 25 / 14:1249 | Выход последнего администратора | `spaces/ui/LeaveSpaceScreen.kt` |
+| 26 / 14:1276 | Пространство · посетитель | `spaces/ui/SpaceDetailsScreen.kt` |
+| 27 / 14:1307 | Подтверждение удаления пространства | `spaces/ui/DeleteSpaceDialog.kt` |
+| 28 / 14:1331 | Нет пространств | `spaces/ui/SpacesScreen.kt` |
 
-## Токены и адаптация
+Управление аккаунтами глобальным администратором в `users/ui/` дополняет макет теми же компонентами. Глобальная роль не даёт доступ к чужим планам.
 
-- Основа SVG: 390 × 844. Используются dp/sp, системные отступы Android, прокрутка, IME padding и нативные Compose-диалоги даты/времени.
-- Primary `#2481CC`, header `#517FA4`, text `#17212B`, secondary `#72808D`, background `#F1F3F5`, divider `#E7EBEF`.
-- Цвета календарей: blue `#2481CC`, purple `#6D4F9C`, green `#357F59`; светлые заливки карточек вынесены в theme.
-- Кнопки: высота 50 dp, скругление 12 dp. Дневная шкала: 64 dp/час; недельная: 56 dp/час.
-- Иконки переведены из SVG в Android vector drawable; скриншоты не используются как UI. Шрифт — системный sans-serif Android.
-- Нижняя навигация адаптирована из [GameHub / BottomControl](https://github.com/Gaalexx/GameHub/blob/master/app/src/main/java/com/project/gamehub/presentation/navigation/BottomControl.kt): плавающая primary-панель шириной 80%, высотой 64 dp, со скруглением 25 dp и подвижным индикатором (onPrimary, alpha 0.2). Для WhoBusy оставлены три иконки с подписями; вертикальные отступы 10 dp и системный нижний inset учитываются в CalendarScreen.
-- Общие элементы и Preview — в `core:ui`; Preview экранов — рядом с чистыми Composable, без Hilt/сети.
+## Токены, компоненты и адаптация
 
-Даты и события отличаются от статичного макета: демоданные вычисляются относительно текущего дня. Скриншоты входа, дня, недели, месяца и выбора коллег просмотрены на Android 15. Автоматических screenshot regression tests пока нет.
+- Основа: 390 × 844. Используются dp/sp, системные отступы Android, прокрутка и IME padding. Верхняя панель — 68 dp плюс системный status inset (в макете вместе 92 px). Системные часы/батарея/жестовая полоса остаются нативными.
+- Primary `#2481CC`, header `#517FA4`, text `#17212B`, secondary `#72808D`, background `#F1F3F5`, divider `#E7EBEF`. Цвета владельцев и светлые заливки — в теме `core:ui`.
+- Кнопки высотой 50 dp, радиус 12 dp; поля с подписью высотой от 64 dp, радиус 12 dp; notice с радиусом 12 dp. Общие строки списка, заголовки разделов, палитра и выбор радиокнопки находятся в `core:ui/components/`.
+- Иконки адаптированы к стандартному набору [Material Icons для Compose](https://developer.android.com/develop/ui/compose/resources#icons): общий `UiIcon` отображает `ImageVector` из `Icons.Filled`, стрелка назад использует `Icons.AutoMirrored.Filled.ArrowBack`. Размеры значков и областей нажатия задаются компонентами; маркеры выбора — Material CheckCircle/RadioButtonUnchecked. Для текущих значков сторонних исключений нет. Новые иконки выбираются из Material; при отсутствии подходящей ищется готовый значок в интернете с указанным источником, без собственного рисования.
+- Экспорты Figma сохранены в `core/ui/src/main/assets/design/` как архив источника. Цветовые свотчи и белый thumb переключателя остаются декоративными ресурсами в `core/ui/src/main/res/drawable/`. Скриншоты макета не используются как UI.
+- Для дат/времени применяются нативные Compose picker-диалоги. Интервалы all-day хранят конец исключительно, редактор показывает последний включённый день.
+- Плавающая панель сохраняет поведение [GameHub / BottomControl](https://github.com/Gaalexx/GameHub/blob/master/app/src/main/java/com/project/gamehub/presentation/navigation/BottomControl.kt): ширина 80%, высота 64 dp, радиус 25 dp, подвижный полупрозрачный индикатор. Три вкладки: Доска, Пространства, Профиль.
+- Панель рисуется поверх `NavDisplay`, по бокам и ниже видно содержимое. Отступ снизу 10 dp плюс системный inset. Только маршруты с маркером `ScreenTypes.BottomBarNavigatable` показывают бар; формы, настройки и детали его не показывают.
+- Даты, число пространств, роли и содержимое — динамические данные. Seed-пространства названы «Команда WhoBusy», «Семья», «Проект», «Друзья»; демособытия привязаны к текущему дню.
+- Все чистые экраны и новые визуальные компоненты имеют автономные Compose Preview. Проверки сборки и выполнения сценариев описаны в [AGENT_MAP.md](AGENT_MAP.md).

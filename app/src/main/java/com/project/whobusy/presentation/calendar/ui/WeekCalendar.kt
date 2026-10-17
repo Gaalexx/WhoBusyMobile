@@ -3,37 +3,32 @@ package com.project.whobusy.presentation.calendar.ui
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
-import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.WindowInsets
-import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
-import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.HorizontalDivider
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
-import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.key
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.LocalDensity
-import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import com.project.whobusy.R
+import com.project.whobusy.core.ui.components.WhoBusyTimeGrid
+import com.project.whobusy.core.ui.components.WhoBusyTimeGridItem
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.presentation.calendar.model.CalendarMode
 import com.project.whobusy.presentation.calendar.model.placeEvents
@@ -49,77 +44,80 @@ fun WeekCalendar(
     onEvent: (CalendarCommand) -> Unit,
 ) {
     val start = weekStart(state.selectedDate)
-    val scroll = rememberScrollState()
     val density = LocalDensity.current
-    LaunchedEffect(start) { scroll.scrollTo(with(density) { (56.dp * 9).roundToPx() }) }
+    val dates = remember(start) { List(7) { start.plusDays(it.toLong()) } }
+    val placements = remember(state.events, dates) { dates.map { placeEvents(state.events, it) } }
+    val textLineHeight = with(density) { 12.sp.roundToPx() }
+    val cardPadding = with(density) { 6.dp.roundToPx() }
+    val timeFormat = remember { DateTimeFormatter.ofPattern("HH:mm") }
     Column(Modifier.fillMaxSize()) {
         WeekAllDayEvents(state, onEvent)
-        BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll)) {
+        WhoBusyTimeGrid(
+            hourHeight = 56.dp,
+            timeColumnWidth = 34.dp,
+            initialHour = 9,
+            resetKey = start,
+            hourLabel = { "%02d".format(it) },
+            modifier = Modifier.weight(1f).fillMaxWidth().testTag("week-time-grid"),
+        ) { viewport ->
             val dayWidth = (maxWidth - 34.dp) / 7
-            Box(
-                Modifier.fillMaxWidth().height(
-                    56.dp * 24 + 90.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
-                ),
-            ) {
-                repeat(24) { hour ->
-                    Row(Modifier.offset(y = 56.dp * hour)) {
-                        Text(
-                            "%02d".format(hour),
-                            Modifier.width(34.dp).padding(start = 8.dp),
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                        HorizontalDivider(color = MaterialTheme.colorScheme.outlineVariant)
-                    }
+            dates.forEachIndexed { index, date ->
+                Box(
+                    Modifier
+                        .offset(x = 34.dp + dayWidth * index)
+                        .width(dayWidth)
+                        .fillMaxHeight()
+                        .clickable {
+                            onEvent(CalendarCommand.SelectDate(date))
+                            onEvent(CalendarCommand.SelectMode(CalendarMode.Day))
+                        },
+                ) {
+                    Box(Modifier.fillMaxHeight().width(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
                 }
-                repeat(7) { index ->
-                    val date = start.plusDays(index.toLong())
-                    Box(
-                        Modifier
-                            .offset(x = 34.dp + dayWidth * index)
-                            .width(dayWidth)
-                            .fillMaxHeight()
-                            .clickable {
-                                onEvent(CalendarCommand.SelectDate(date))
-                                onEvent(CalendarCommand.SelectMode(CalendarMode.Day))
-                            },
-                    ) {
-                        Box(Modifier.fillMaxHeight().width(1.dp).background(MaterialTheme.colorScheme.outlineVariant))
-                        placeEvents(state.events, date).forEach { placement ->
-                            val event = placement.event
-                            val width = dayWidth / placement.laneCount
+                placements[index].filter { viewport.isVisible(it.startMinute, it.endMinute) }.forEach { placement ->
+                    val event = placement.event
+                    val width = dayWidth / placement.laneCount
+                    val availableTextHeight =
+                        viewport.eventHeight(placement.startMinute, placement.endMinute) - cardPadding
+                    key(date, event.id, event.start) {
+                        WhoBusyTimeGridItem(
+                            viewport = viewport,
+                            startMinute = placement.startMinute,
+                            endMinute = placement.endMinute,
+                            left = 34.dp + dayWidth * index + width * placement.lane + 2.dp,
+                            width = (width - 4.dp).coerceAtLeast(1.dp),
+                        ) {
                             Column(
                                 Modifier
-                                    .offset(
-                                        x = width * placement.lane + 2.dp,
-                                        y =
-                                            56.dp * (placement.startMinute / 60f),
-                                    ).width(width - 4.dp)
-                                    .height(
-                                        (56.dp * ((placement.endMinute - placement.startMinute) / 60f)).coerceAtLeast(
-                                            36.dp,
-                                        ) -
-                                            2.dp,
-                                    ).clip(
-                                        RoundedCornerShape(5.dp),
-                                    ).background(eventColor(event))
+                                    .fillMaxSize()
+                                    .clip(RoundedCornerShape(5.dp))
+                                    .background(eventColor(event))
                                     .clickable { onEvent(CalendarCommand.OpenEvent(event)) }
+                                    .testTag("week-event-${event.id}")
+                                    .semantics {
+                                        if (availableTextHeight < textLineHeight) contentDescription = event.title
+                                    }
                                     .padding(3.dp),
                             ) {
-                                Text(
-                                    event.start.format(DateTimeFormatter.ofPattern("HH:mm")),
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    maxLines = 1,
-                                )
-                                Text(
-                                    event.title,
-                                    color = Color.White,
-                                    fontSize = 10.sp,
-                                    lineHeight = 12.sp,
-                                    maxLines = 2,
-                                    overflow = TextOverflow.Ellipsis,
-                                )
+                                if (availableTextHeight >= textLineHeight * 2) {
+                                    Text(
+                                        event.start.format(timeFormat),
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp,
+                                        maxLines = 1,
+                                    )
+                                }
+                                if (availableTextHeight >= textLineHeight) {
+                                    Text(
+                                        event.title,
+                                        color = Color.White,
+                                        fontSize = 10.sp,
+                                        lineHeight = 12.sp,
+                                        maxLines = if (availableTextHeight >= textLineHeight * 3) 2 else 1,
+                                        overflow = TextOverflow.Ellipsis,
+                                    )
+                                }
                             }
                         }
                     }
@@ -133,4 +131,18 @@ fun WeekCalendar(
 @Composable
 private fun WeekCalendarPreview() {
     WhoBusyTheme { WeekCalendar(CalendarPreviewData.state, {}) }
+}
+
+@Preview(name = "Короткие и многочасовые события", widthDp = 390, heightDp = 450, showBackground = true)
+@Composable
+private fun WeekCalendarDurationsPreview() {
+    val date = CalendarPreviewData.date
+    val event = CalendarPreviewData.events.first()
+    val events = listOf(
+        event.copy(id = 1, start = date.atTime(9, 0), end = date.atTime(9, 5)),
+        event.copy(id = 2, start = date.atTime(9, 15), end = date.atTime(9, 45)),
+        event.copy(id = 3, start = date.atTime(10, 0), end = date.atTime(11, 0)),
+        event.copy(id = 4, start = date.atTime(12, 0), end = date.atTime(23, 0)),
+    )
+    WhoBusyTheme { WeekCalendar(CalendarPreviewData.state.copy(events = events), {}) }
 }

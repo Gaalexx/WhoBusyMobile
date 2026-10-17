@@ -8,10 +8,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.selection.toggleable
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.foundation.verticalScroll
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Surface
 import androidx.compose.material3.Text
@@ -70,65 +70,67 @@ fun BoardSettingsScreen(
     ) {
         Column(Modifier.fillMaxSize()) {
             SpacesFeedback(state.isLoading, state.error)
-            Column(
-                Modifier
-                    .weight(1f)
-                    .verticalScroll(rememberScrollState()),
-            ) {
-                Row(
-                    Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
-                    horizontalArrangement = Arrangement.spacedBy(12.dp),
-                ) {
-                    Surface(
-                        onClick = {
-                            if (enabled) onEvent(BoardSettingsCommand.AllSpaces)
-                        },
-                        shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primaryContainer,
+            LazyColumn(Modifier.weight(1f)) {
+                item(key = "quick-filters", contentType = "quick-filters") {
+                    Row(
+                        Modifier.padding(horizontal = 16.dp, vertical = 18.dp),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
-                        Text(
-                            stringResource(R.string.board_shared),
-                            Modifier.padding(horizontal = 36.dp, vertical = 6.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
-                    }
-                    Surface(
-                        onClick = {
-                            if (enabled) onEvent(BoardSettingsCommand.OnlyOwn)
-                        },
-                        shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primaryContainer,
-                    ) {
-                        Text(
-                            stringResource(R.string.board_only_own),
-                            Modifier.padding(horizontal = 26.dp, vertical = 6.dp),
-                            color = MaterialTheme.colorScheme.primary,
-                            style = MaterialTheme.typography.bodySmall,
-                        )
+                        Surface(
+                            onClick = {
+                                if (enabled) onEvent(BoardSettingsCommand.AllSpaces)
+                            },
+                            shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Text(
+                                stringResource(R.string.board_shared),
+                                Modifier.padding(horizontal = 36.dp, vertical = 6.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
+                        Surface(
+                            onClick = {
+                                if (enabled) onEvent(BoardSettingsCommand.OnlyOwn)
+                            },
+                            shape = RoundedCornerShape(16.dp), color = MaterialTheme.colorScheme.primaryContainer,
+                        ) {
+                            Text(
+                                stringResource(R.string.board_only_own),
+                                Modifier.padding(horizontal = 26.dp, vertical = 6.dp),
+                                color = MaterialTheme.colorScheme.primary,
+                                style = MaterialTheme.typography.bodySmall,
+                            )
+                        }
                     }
                 }
-                WhoBusyListRow(
-                    stringResource(R.string.board_my_plans),
-                    stringResource(R.string.board_my_plans_body),
-                    trailing = {
-                        WhoBusyToggle(
-                            state.settings.showOwn,
-                            { if (enabled) onEvent(BoardSettingsCommand.ShowOwn(it)) },
-                        )
-                    },
-                    modifier = Modifier.toggleable(
-                        state.settings.showOwn, enabled = enabled, role = Role.Switch,
-                        onValueChange = {
-                            onEvent(BoardSettingsCommand.ShowOwn(it))
+                item(key = "own-plans", contentType = "own-plans") {
+                    WhoBusyListRow(
+                        stringResource(R.string.board_my_plans),
+                        stringResource(R.string.board_my_plans_body),
+                        trailing = {
+                            WhoBusyToggle(
+                                state.settings.showOwn,
+                                { if (enabled) onEvent(BoardSettingsCommand.ShowOwn(it)) },
+                            )
                         },
-                    ),
-                )
-                Spacer(Modifier.height(24.dp))
-                WhoBusySectionTitle(
-                    stringResource(R.string.board_add_spaces),
-                    Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
-                )
-                Spacer(Modifier.height(12.dp))
-                state.spaces.forEach { space ->
+                        modifier = Modifier.toggleable(
+                            state.settings.showOwn, enabled = enabled, role = Role.Switch,
+                            onValueChange = {
+                                onEvent(BoardSettingsCommand.ShowOwn(it))
+                            },
+                        ),
+                    )
+                }
+                item(key = "spaces-heading", contentType = "section-heading") {
+                    Spacer(Modifier.height(24.dp))
+                    WhoBusySectionTitle(
+                        stringResource(R.string.board_add_spaces),
+                        Modifier.padding(horizontal = 20.dp, vertical = 8.dp),
+                    )
+                    Spacer(Modifier.height(12.dp))
+                }
+                items(state.spaces, key = { it.id }, contentType = { "space" }) { space ->
                     val selected = space.id in state.settings.spaceIds
                     WhoBusyListRow(
                         space.name,
@@ -147,11 +149,13 @@ fun BoardSettingsScreen(
                         ),
                     )
                 }
-                WhoBusyNotice(
-                    stringResource(R.string.board_no_duplicates_title),
-                    stringResource(R.string.board_no_duplicates_body),
-                    Modifier.padding(horizontal = 16.dp, vertical = 38.dp),
-                )
+                item(key = "notice", contentType = "notice") {
+                    WhoBusyNotice(
+                        stringResource(R.string.board_no_duplicates_title),
+                        stringResource(R.string.board_no_duplicates_body),
+                        Modifier.padding(horizontal = 16.dp, vertical = 38.dp),
+                    )
+                }
             }
             WhoBusyButton(
                 stringResource(R.string.board_show),

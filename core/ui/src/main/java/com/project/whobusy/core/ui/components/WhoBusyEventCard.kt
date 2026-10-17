@@ -3,14 +3,11 @@ package com.project.whobusy.core.ui.components
 import androidx.compose.foundation.background
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Arrangement
-import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
-import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -19,6 +16,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.semantics.contentDescription
+import androidx.compose.ui.semantics.semantics
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -30,15 +29,20 @@ import com.project.whobusy.core.ui.theme.calendarTint
 @Composable
 fun WhoBusyEventCard(
     title: String,
-    subtitle: String,
+    subtitle: String?,
     color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     detail: String? = null,
     compact: Boolean = false,
+    showText: Boolean = true,
 ) {
-    Row(modifier.clip(RoundedCornerShape(8.dp)).background(calendarTint(color)).clickable(onClick = onClick)) {
-        Column(
+    Row(
+        modifier.clip(RoundedCornerShape(8.dp)).background(calendarTint(color))
+            .clickable(onClick = onClick)
+            .semantics { if (!showText) contentDescription = title },
+    ) {
+        if (showText) Column(
             Modifier.padding(horizontal = 10.dp, vertical = if (compact) 2.dp else 8.dp),
             verticalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 4.dp),
         ) {
@@ -49,13 +53,15 @@ fun WhoBusyEventCard(
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            Text(
-                subtitle,
-                color = color,
-                style = MaterialTheme.typography.bodySmall,
-                maxLines = 2,
-                overflow = TextOverflow.Ellipsis,
-            )
+            subtitle?.let {
+                Text(
+                    it,
+                    color = color,
+                    style = MaterialTheme.typography.bodySmall,
+                    maxLines = 2,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
             detail?.let {
                 Text(it, color = color, style = MaterialTheme.typography.bodySmall, maxLines = 1)
             }
@@ -92,6 +98,21 @@ private fun CompactEventCardPreview() {
             Modifier.fillMaxWidth().height(62.dp),
             detail = "Momentum",
             compact = true,
+        )
+    }
+}
+
+@Preview(name = "Минимальный временной блок", showBackground = true)
+@Composable
+private fun MinimalEventCardPreview() {
+    WhoBusyTheme {
+        WhoBusyEventCard(
+            title = "Короткий план",
+            subtitle = null,
+            color = WhoBusyColors.Primary,
+            onClick = {},
+            modifier = Modifier.fillMaxWidth().height(8.dp),
+            showText = false,
         )
     }
 }

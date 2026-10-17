@@ -3,9 +3,10 @@ package com.project.whobusy.presentation.event.ui
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.padding
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
@@ -75,85 +76,89 @@ fun EventEditorScreen(
             )
         },
     ) {
-        Spacer(Modifier.height(16.dp))
-        WhoBusyTextField(
-            form.title,
-            { onEvent(EditorCommand.Title(it)) },
-            stringResource(R.string.event_title),
-            Modifier.padding(horizontal = 16.dp),
-            enabled = !state.isSaving,
-        )
-        Spacer(Modifier.height(8.dp))
-        WhoBusyListRow(
-            stringResource(R.string.plan_placement),
-            if (space ==
-                null
-            ) {
-                stringResource(R.string.plan_personal)
-            } else {
-                stringResource(R.string.plan_in_space, space.name)
-            },
-            if (state.eventId == null) ({ placement = true }) else null,
-        )
-        if (space != null) {
-            WhoBusyNotice(
-                stringResource(R.string.plan_visible_everyone, space.name),
-                stringResource(R.string.plan_visible_everyone_body),
-                Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        WhoBusyListRow(stringResource(R.string.plan_date_range), planDates(form), onDates)
-        if (space == null) {
-            Spacer(Modifier.height(8.dp))
-            WhoBusyListRow(
-                stringResource(R.string.label_all_day),
-                stringResource(R.string.plan_all_day_hint),
-                trailing = { WhoBusyToggle(form.allDay, { onEvent(EditorCommand.AllDay(it)) }) },
-            )
-        }
-        Spacer(Modifier.height(8.dp))
-        WhoBusyListRow(
-            stringResource(R.string.plan_repeat_status),
-            stringResource(
-                R.string.plan_repeat_status_value,
-                recurrenceTitle(form.recurrenceRule),
-                statusTitle(form.status),
-            ),
-            onDates,
-        )
-        Spacer(Modifier.height(10.dp))
-        WhoBusyTextField(
-            form.location,
-            { onEvent(EditorCommand.Location(it)) },
-            stringResource(R.string.event_location),
-            Modifier.padding(horizontal = 16.dp),
-            enabled = !state.isSaving,
-        )
-        Spacer(Modifier.height(12.dp))
-        WhoBusyTextField(
-            form.description,
-            { onEvent(EditorCommand.Description(it)) },
-            stringResource(R.string.event_description),
-            Modifier.padding(horizontal = 16.dp),
-            enabled = !state.isSaving,
-            singleLine = false,
-        )
-        if (space == null && state.canChangeVisibility) {
-            Spacer(Modifier.height(12.dp))
-            val subtitle =
-                when {
-                    form.shares.isEmpty() -> stringResource(R.string.plan_visibility_private)
-                    form.shares.all {
-                        it.visibility == EventVisibility.Busy
-                    } -> stringResource(R.string.plan_visibility_busy_count, form.shares.size)
-
-                    else -> stringResource(R.string.plan_visibility_count, form.shares.size)
+        item {
+            Column {
+                Spacer(Modifier.height(16.dp))
+                WhoBusyTextField(
+                    form.title,
+                    { onEvent(EditorCommand.Title(it)) },
+                    stringResource(R.string.event_title),
+                    Modifier.padding(horizontal = 16.dp),
+                    enabled = !state.isSaving,
+                )
+                Spacer(Modifier.height(8.dp))
+                WhoBusyListRow(
+                    stringResource(R.string.plan_placement),
+                    if (space ==
+                        null
+                    ) {
+                        stringResource(R.string.plan_personal)
+                    } else {
+                        stringResource(R.string.plan_in_space, space.name)
+                    },
+                    if (state.eventId == null) ({ placement = true }) else null,
+                )
+                if (space != null) {
+                    WhoBusyNotice(
+                        stringResource(R.string.plan_visible_everyone, space.name),
+                        stringResource(R.string.plan_visible_everyone_body),
+                        Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                    )
                 }
-            WhoBusyListRow(stringResource(R.string.plan_visibility), subtitle, onVisibility)
-        }
-        (form.validationError ?: state.error)?.let {
-            Text(stringResource(it), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
+                Spacer(Modifier.height(8.dp))
+                WhoBusyListRow(stringResource(R.string.plan_date_range), planDates(form), onDates)
+                if (space == null) {
+                    Spacer(Modifier.height(8.dp))
+                    WhoBusyListRow(
+                        stringResource(R.string.label_all_day),
+                        stringResource(R.string.plan_all_day_hint),
+                        trailing = { WhoBusyToggle(form.allDay, { onEvent(EditorCommand.AllDay(it)) }) },
+                    )
+                }
+                Spacer(Modifier.height(8.dp))
+                WhoBusyListRow(
+                    stringResource(R.string.plan_repeat_status),
+                    stringResource(
+                        R.string.plan_repeat_status_value,
+                        recurrenceTitle(form.recurrenceRule),
+                        statusTitle(form.status),
+                    ),
+                    onDates,
+                )
+                Spacer(Modifier.height(10.dp))
+                WhoBusyTextField(
+                    form.location,
+                    { onEvent(EditorCommand.Location(it)) },
+                    stringResource(R.string.event_location),
+                    Modifier.padding(horizontal = 16.dp),
+                    enabled = !state.isSaving,
+                )
+                Spacer(Modifier.height(12.dp))
+                WhoBusyTextField(
+                    form.description,
+                    { onEvent(EditorCommand.Description(it)) },
+                    stringResource(R.string.event_description),
+                    Modifier.padding(horizontal = 16.dp),
+                    enabled = !state.isSaving,
+                    singleLine = false,
+                )
+                if (space == null && state.canChangeVisibility) {
+                    Spacer(Modifier.height(12.dp))
+                    val subtitle =
+                        when {
+                            form.shares.isEmpty() -> stringResource(R.string.plan_visibility_private)
+                            form.shares.all {
+                                it.visibility == EventVisibility.Busy
+                            } -> stringResource(R.string.plan_visibility_busy_count, form.shares.size)
+
+                            else -> stringResource(R.string.plan_visibility_count, form.shares.size)
+                        }
+                    WhoBusyListRow(stringResource(R.string.plan_visibility), subtitle, onVisibility)
+                }
+                (form.validationError ?: state.error)?.let {
+                    Text(stringResource(it), Modifier.padding(16.dp), color = MaterialTheme.colorScheme.error)
+                }
+            }
         }
     }
     if (placement) {
@@ -161,16 +166,18 @@ fun EventEditorScreen(
             onDismissRequest = { placement = false },
             title = { Text(stringResource(R.string.plan_placement)) },
             text = {
-                Column(Modifier.verticalScroll(rememberScrollState())) {
-                    WhoBusyListRow(
-                        stringResource(R.string.plan_personal),
-                        onClick = {
-                            onEvent(EditorCommand.Placement(null))
-                            placement = false
-                        },
-                        trailing = { WhoBusySelectionMark(form.spaceId == null) },
-                    )
-                    state.spaces.forEach { item ->
+                LazyColumn(Modifier.heightIn(max = 400.dp)) {
+                    item(key = "personal") {
+                        WhoBusyListRow(
+                            stringResource(R.string.plan_personal),
+                            onClick = {
+                                onEvent(EditorCommand.Placement(null))
+                                placement = false
+                            },
+                            trailing = { WhoBusySelectionMark(form.spaceId == null) },
+                        )
+                    }
+                    items(state.spaces, key = { it.id }) { item ->
                         WhoBusyListRow(
                             item.name,
                             onClick = {

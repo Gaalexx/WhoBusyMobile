@@ -39,7 +39,7 @@
 `core/ui/src/main/java/com/project/whobusy/core/ui/`:
 
 - `theme/`: палитра, светлые цвета карточек, Material3-тема и типографика.
-- `components/`: кнопки/FAB, поля, Tabs/BottomBar/TopBar, DateCell, EventCard/Chip, Avatar, SwitchRow, Notice, ListRow, SectionTitle, ColorPalette, SelectionMark, RadioRow, Toggle и ChoicePill.
+- `components/`: кнопки/FAB, поля, Tabs/BottomBar/TopBar, DateCell, EventCard/Chip, Avatar, SwitchRow, Notice, ListRow, SectionTitle, ColorPalette, SelectionMark, RadioRow, Toggle, ChoicePill и общая часовая сетка WhoBusyTimeGrid/WhoBusyTimeGridItem.
 - Предметные иконки централизованы в `components/WhoBusyIcon.kt`: `UiIcon.imageVector` использует стандартные `Icons.Filled` из Material, Back — `Icons.AutoMirrored.Filled.ArrowBack`. Маркеры выбора используют Material CheckCircle/RadioButtonUnchecked. Зависимость подключена в `core:ui`, версия — в каталоге Gradle. Исключений для текущего набора нет; новые значки сначала ищи в Material, недостающие — в готовых интернет-каталогах с указанием источника, без собственного рисования.
 - Декоративные свотчи палитры и thumb переключателя используют ресурсы `core/ui/src/main/res/drawable/`. Экспорты Figma сохранены в `core/ui/src/main/assets/design/` как исходный архив оформления. Предметные иконки из него не отображаются; временных Figma URL в коде нет.
 - Общие компоненты не зависят от моделей приложения. Новые визуальные компоненты и чистые экраны имеют автономные Preview со значимыми состояниями.
@@ -64,7 +64,13 @@ EventEditorViewModel объединяет Editor/Visibility/SpaceVisibility/Date
 
 День: часовая сетка, all-day, пересечения и текущее время. Неделя: семь столбцов и полосы all-day, нажатие на событие открывает детали, на свободную область дня — день. Месяц: сетка, точки, выделенные диапазоны all-day и планы выбранной даты; all-day представлен компактной строкой. Повторения: DAILY/WEEKLY/MONTHLY/YEARLY, будни через BYDAY, INTERVAL/COUNT/UNTIL для поддерживаемого подмножества RRULE; месяц с отсутствующим числом и невисокосный 29 февраля пропускаются. Изменение/удаление касается всей серии, отдельных исключений нет.
 
-Короткие временные блоки в дневной сетке используют компактную карточку; полные подробности доступны на экране плана.
+День и неделя используют `core:ui/components/WhoBusyTimeGrid.kt`: часы 00–24 создаются в LazyColumn, непрерывные карточки событий размещаются отдельным слоем WhoBusyTimeGridItem. Композиция карточки существует только при пересечении с viewport; многочасовое событие остаётся видимым и доступным для нажатия после ухода его начального часа за экран. Общий scrollable на контейнере прокручивает и фон, и карточки одним LazyListState, включая жест поверх события; доступны семантические ScrollBy/ScrollToIndex. `key(resetKey)` сбрасывает позицию при смене дня/недели, а rememberLazyListState восстанавливает её при пересоздании. Нижний отступ под overlay-бар находится за границей 24:00.
+
+`TimeGridViewport.kt` задаёт общую пиксельную геометрию линий, карточек и текущего времени: округляются абсолютные координаты начала и конца, высота равна их разнице. Подписи центрируются на линиях; минимальная высота в dp и вычитание отступа из длительности не применяются. Если субпиксельный интервал округлился в ноль, карточка показывает маркер высотой 1 px. Короткие блоки показывают только помещающийся текст либо цвет с accessibility-описанием; полные подробности доступны по нажатию. Группировка событий по дням и пересечениям кешируется через remember.
+
+Растущие UI-коллекции используют LazyColumn/LazyRow с отдельным `items` на элементы и устойчивыми ключами: аккаунты, пространства, участники, приглашения, планы пространства, пространства в настройках доски и видимости. `EventPage` принимает LazyListScope, поэтому динамические строки видимости не оказываются внутри одного большого item. Диалоги размещения плана и выбора преемника содержат ограниченные по высоте LazyColumn.
+
+`DayAllDayEvents.kt` и `WeekAllDayEvents.kt` отображают all-day в LazyColumn высотой до 112 dp, сохраняя место часовой сетке. Повторяющиеся события имеют ключ `id:start`; списки сбрасывают позицию при смене дня/недели. `CalendarLegend.kt` использует горизонтальный LazyRow с ключом user.id. Временные карточки Day/Week отбираются по viewport до создания UI-элементов и сохраняют непрерывную геометрию. Небольшие фиксированные наборы (3 вкладки, 7 дней, до 42 дат месяца, enum-варианты и палитра) используют обычные Row/Column.
 
 ## Права и моковые потоки
 
@@ -96,6 +102,7 @@ EventEditorViewModel объединяет Editor/Visibility/SpaceVisibility/Date
 
 ```bash
 ./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+./gradlew :core:ui:testDebugUnitTest
 ./gradlew :app:assembleDebugAndroidTest
 ./gradlew :app:connectedDebugAndroidTest
 ```
@@ -103,6 +110,10 @@ EventEditorViewModel объединяет Editor/Visibility/SpaceVisibility/Date
 JVM-тесты в `app/src/test/` проверяют аккаунты/нормализацию/пароли, пространства/роли/приглашения/последнего администратора, видимость/CRUD/отсоединение планов, повторения и даты, ViewModel/эффекты/черновик, сериализацию маршрутов. Исторические MockEngine-тесты проверяют старый remote и не доказывают интеграцию API 2.0.
 
 Android-сценарии: `app/src/androidTest/.../AppNavigationTest.kt` — шесть потоков регистрации/доски/пространств/приглашений/планов/профиля/аккаунтов, восстановление Activity, видимость и геометрия overlay. Helper сохраняет PNG в external files/screenshots; для выгрузки запускай instrumentation после установки APK и забирай файлы до удаления приложения Gradle. `DesignGalleryTest#galleryAllScreens` отдельно отрисовывает 28 состояний на автономных данных, сохраняет PNG в external files/gallery; это визуальная проверка, без pixel golden comparison.
+
+`CalendarTimelineTest.kt` проверяет реальные границы карточек дня/недели относительно линий часов, 15-минутный интервал и конец в 24:00, непрерывность многочасовой карточки, нажатие и прокрутку поверх неё, исключение невидимых событий, восстановление прокрутки через StateRestorationTester. Чистая геометрия и округление покрыты `core/ui/src/test/.../TimeGridViewportTest.kt`; обрезка многодневного события — CalendarDatesTest.
+
+`LazyCollectionsTest.kt` использует 100 all-day событий, 100 владельцев и 200 аккаунтов: дальние элементы отсутствуют в композиции до прокрутки, после неё доступны для нажатия, а часовая сетка остаётся видимой.
 
 Форматирование `.kt` и `.kts` выполняется штатным Reformat Code из Android Studio (у пользователя назначен на Ctrl+S). `.idea/codeStyles/` закрепляет `KOTLIN_OFFICIAL`; `.editorconfig` задаёт 4 пробела, 120 символов, trailing comma и явные импорты. Ktlint не используется для переформатирования, поскольку иначе расставляет переносы. Для [CLI-форматтера Studio](https://www.jetbrains.com/help/idea/command-line-formatter.html) укажи путь к установленной IDE в `ANDROID_STUDIO_HOME`:
 ```bash
@@ -115,14 +126,13 @@ Android-сценарии: `app/src/androidTest/.../AppNavigationTest.kt` — ш�
 ## Выполненные проверки
 
 - Debug APK и APK инструментальных тестов собраны: `:app:assembleDebug`, `:app:assembleDebugAndroidTest`.
-- `:app:testDebugUnitTest`: запущены 79 JVM-тестов, все прошли.
-- На временном эмуляторе Android 15 / API 35 запущены шесть сценариев AppNavigationTest и DesignGalleryTest: всего 7 тестов, все прошли. Галерея отрисовала 28 состояний; PNG просмотрены вручную, включая overlay, формы, busy-only и диалог удаления. Размер экрана при проверке — 390 × 844 dp.
+- `:app:testDebugUnitTest` и `:core:ui:testDebugUnitTest`: запущены 80 и 7 JVM-тестов соответственно, все прошли.
+- На временном эмуляторе Android 15 / API 35 запущены 6 AppNavigationTest, 6 CalendarTimelineTest, 4 LazyCollectionsTest и 1 DesignGalleryTest: всего 17 Android-тестов, все прошли. Проверены большие списки, последние элементы и callbacks, геометрия сетки и восстановление прокрутки, все навигационные потоки. Галерея отрисовала 28 состояний; изменённые день, участники, видимость и детали плана просмотрены вручную при 390 × 844 dp.
 - Android Lint: 0 ошибок, 70 предупреждений (преимущественно неиспользуемые ресурсы и сведения о версиях).
-- Штатный форматтер Android Studio 2026.1.2 обработал все 204 файла `.kt`/`.kts`; повторная проверка `-d` прошла. Сравнение Kotlin-токенов со снимком до форматирования не обнаружило изменений вне пробельных символов; `git diff --check` прошёл. После форматирования повторно собран Debug APK и запущены 79 JVM-тестов; `:app:compileDebugAndroidTestKotlin` скомпилировал Android-тесты без их запуска.
-- Material-иконки проверены сборкой Debug и AndroidTest APK и Lint; отдельно запущен `DesignGalleryTest` (1 Android-тест, 28 состояний), все изображения отрисованы и просмотрены. Функциональный прогон и JVM-тесты выше относятся к проверке механики приложения.
+- Форматирование всех 212 Kotlin-файлов/Gradle-скриптов проверено штатным форматтером Android Studio 2026.1.2 в режиме `-d`; `git diff --check` прошёл.
 - Путь каждого экрана в DESIGN_REFERENCE и локальные ссылки документации проверены. API-контракт сверен с 31 бизнес-маршрутом FunProject commit `1cfd95b`; живой API и backend-тесты не запускались.
 
-Сборка AndroidTest APK сама по себе не запускает тесты. Фактический прогон выше выполнен через `adb shell am instrument -w -e class com.project.whobusy.DesignGalleryTest,com.project.whobusy.AppNavigationTest com.project.whobusy.test/androidx.test.runner.AndroidJUnitRunner`.
+Сборка AndroidTest APK сама по себе не запускает тесты. Последний фактический прогон: `adb shell am instrument -w -e class com.project.whobusy.CalendarTimelineTest,com.project.whobusy.LazyCollectionsTest,com.project.whobusy.AppNavigationTest,com.project.whobusy.DesignGalleryTest com.project.whobusy.test/androidx.test.runner.AndroidJUnitRunner`.
 
 ## Ограничения
 

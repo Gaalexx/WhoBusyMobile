@@ -1,14 +1,15 @@
 package com.project.whobusy.presentation.spaces.ui
 
 import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.rememberScrollState
-import androidx.compose.foundation.verticalScroll
+import androidx.compose.foundation.lazy.LazyColumn
+import androidx.compose.foundation.lazy.items
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -52,29 +53,45 @@ fun SpacesScreen(
             )
         }
     ) {
-        Column(Modifier.fillMaxSize().testTag("spaces-content").verticalScroll(rememberScrollState())) {
-            SpacesFeedback(state.isLoading, state.error)
+        LazyColumn(
+            modifier = Modifier.fillMaxSize().testTag("spaces-content"),
+            contentPadding = PaddingValues(bottom = 110.dp),
+        ) {
+            item(key = "feedback") {
+                SpacesFeedback(state.isLoading, state.error)
+            }
             if (state.spaces.isEmpty() && !state.isLoading) {
                 if (state.invitations.isNotEmpty()) {
-                    WhoBusyListRow(
-                        stringResource(R.string.spaces_invitations),
-                        stringResource(R.string.spaces_invitation_count, state.invitations.size),
-                        onInvitations,
-                    )
+                    item(key = "invitations") {
+                        WhoBusyListRow(
+                            stringResource(R.string.spaces_invitations),
+                            stringResource(R.string.spaces_invitation_count, state.invitations.size),
+                            onInvitations,
+                        )
+                    }
                 }
-                EmptySpaces(onCreate, onJoin)
+                item(key = "empty") {
+                    EmptySpaces(onCreate, onJoin)
+                }
             } else {
-                Spacer(Modifier.height(16.dp))
-                WhoBusyListRow(
-                    stringResource(R.string.spaces_invitations),
-                    stringResource(R.string.spaces_invitation_count, state.invitations.size),
-                    onInvitations,
-                    trailing = { WhoBusyIcon(UiIcon.Mail, tint = MaterialTheme.colorScheme.primary) },
-                )
-                Spacer(Modifier.height(24.dp))
-                WhoBusySectionTitle(stringResource(R.string.spaces_my_spaces), Modifier.padding(horizontal = 20.dp))
-                Spacer(Modifier.height(12.dp))
-                state.spaces.forEach { space ->
+                item(key = "header") {
+                    Column {
+                        Spacer(Modifier.height(16.dp))
+                        WhoBusyListRow(
+                            stringResource(R.string.spaces_invitations),
+                            stringResource(R.string.spaces_invitation_count, state.invitations.size),
+                            onInvitations,
+                            trailing = { WhoBusyIcon(UiIcon.Mail, tint = MaterialTheme.colorScheme.primary) },
+                        )
+                        Spacer(Modifier.height(24.dp))
+                        WhoBusySectionTitle(
+                            stringResource(R.string.spaces_my_spaces),
+                            Modifier.padding(horizontal = 20.dp),
+                        )
+                        Spacer(Modifier.height(12.dp))
+                    }
+                }
+                items(state.spaces, key = { "space:${it.id}" }, contentType = { "space" }) { space ->
                     WhoBusyListRow(
                         title = space.name,
                         subtitle =
@@ -87,23 +104,30 @@ fun SpacesScreen(
                         leading = { WhoBusyAvatar(space.name.take(1), spaceColor(space.id)) },
                     )
                 }
-                Spacer(Modifier.height(48.dp))
-                WhoBusyButton(stringResource(R.string.spaces_create), onCreate, Modifier.padding(horizontal = 16.dp))
-                Spacer(Modifier.height(16.dp))
-                WhoBusyButton(
-                    stringResource(R.string.spaces_join_key),
-                    onJoin,
-                    Modifier.padding(horizontal = 16.dp),
-                    style = ButtonStyle.Secondary,
-                )
-                Text(
-                    stringResource(R.string.spaces_roles_local),
-                    Modifier.padding(horizontal = 20.dp, vertical = 32.dp),
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                item(key = "actions") {
+                    Column {
+                        Spacer(Modifier.height(48.dp))
+                        WhoBusyButton(
+                            stringResource(R.string.spaces_create),
+                            onCreate,
+                            Modifier.padding(horizontal = 16.dp),
+                        )
+                        Spacer(Modifier.height(16.dp))
+                        WhoBusyButton(
+                            stringResource(R.string.spaces_join_key),
+                            onJoin,
+                            Modifier.padding(horizontal = 16.dp),
+                            style = ButtonStyle.Secondary,
+                        )
+                        Text(
+                            stringResource(R.string.spaces_roles_local),
+                            Modifier.padding(horizontal = 20.dp, vertical = 32.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                    }
+                }
             }
-            Spacer(Modifier.height(110.dp))
         }
     }
 }

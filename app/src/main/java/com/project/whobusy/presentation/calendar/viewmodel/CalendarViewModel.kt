@@ -11,10 +11,8 @@ import com.project.whobusy.presentation.calendar.model.CalendarMode
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -40,12 +38,23 @@ constructor(
             ),
         )
     val state = _state.asStateFlow()
-    private val effectChannel = Channel<CalendarEffect>(Channel.BUFFERED)
-    val effects = effectChannel.receiveAsFlow()
     private var loadJob: Job? = null
-    private val openedEvents = mutableMapOf<Int, CalendarEvent>()
+    private val openedEvents = mutableMapOf<Pair<Int, String>, CalendarEvent>()
 
-    fun event(id: Int): CalendarEvent? = openedEvents[id] ?: _state.value.events.firstOrNull { it.id == id }
+    fun rememberEvent(event: CalendarEvent) {
+        openedEvents[event.id to event.start.toString()] = event
+    }
+
+    fun event(id: Int, occurrenceStart: String? = null): CalendarEvent? {
+        val cached = if (occurrenceStart == null) {
+            openedEvents.values.lastOrNull { it.id == id }
+        } else {
+            openedEvents[id to occurrenceStart]
+        }
+        return cached ?: _state.value.events.firstOrNull {
+            it.id == id && (occurrenceStart == null || it.start.toString() == occurrenceStart)
+        }
+    }
 
     fun series(id: Int): CalendarEvent? =
         (_state.value.series.firstOrNull { it.id == id } ?: event(id))?.let {
@@ -74,35 +83,25 @@ constructor(
                 )
 
             is CalendarCommand.ToggleOwner -> toggleOwner(command.id)
-            is CalendarCommand.OpenEvent -> {
-                openedEvents[command.event.id] = command.event
-                emitEffect(CalendarEffect.OpenEvent(command.event.id))
-            }
+            is CalendarCommand.OpenEvent -> rememberEvent(command.event)
 
             is CalendarCommand.SaveEvent ->
-                mutate(CalendarEffect.EventSaved) {
+                mutate(CalendarEffect.EventSaved(command.eventId)) {
                     repository.saveEvent(command.draft, command.eventId).getOrThrow()
                 }
 
-            is CalendarCommand.EditEvent -> emitEffect(CalendarEffect.EditEvent(command.eventId))
             is CalendarCommand.DeleteEvent ->
-                mutate(CalendarEffect.EventDeleted) {
+                mutate(CalendarEffect.EventDeleted(command.eventId)) {
                     repository.deleteEvent(command.eventId).getOrThrow()
                 }
 
             CalendarCommand.Today -> selectDate(LocalDate.now(clock))
             CalendarCommand.Refresh -> reload()
-            CalendarCommand.CreateEvent ->
-                emitEffect(CalendarEffect.CreateEvent(_state.value.selectedDate.toString()))
-
-            CalendarCommand.OpenCalendars -> emitEffect(CalendarEffect.OpenCalendars)
+            CalendarCommand.CreateEvent, CalendarCommand.OpenCalendars -> Unit
+            CalendarCommand.ResultHandled -> _state.update { it.copy(result = null) }
             CalendarCommand.ClearError -> _state.update { it.copy(error = null) }
             CalendarCommand.Logout -> auth.logout()
         }
-    }
-
-    private fun emitEffect(effect: CalendarEffect) {
-        viewModelScope.launch { effectChannel.send(effect) }
     }
 
     private fun selectDate(date: LocalDate) {
@@ -120,18 +119,17 @@ constructor(
     }
 
     private fun mutate(
-        successEffect: CalendarEffect? = null,
+        result: CalendarEffect? = null,
         block: suspend () -> Unit,
     ) {
-        if (_state.value.isSaving) return
+        if (_state.value.isSaving || _state.value.result != null) return
         loadJob?.cancel()
         _state.update { it.copy(isSaving = true, error = null) }
         viewModelScope.launch {
             try {
                 block()
-                _state.update { it.copy(isSaving = false) }
+                _state.update { it.copy(isSaving = false, result = result) }
                 reload()
-                if (successEffect != null) effectChannel.send(successEffect)
             } catch (exception: CancellationException) {
                 throw exception
             } catch (exception: Exception) {
@@ -155,7 +153,7 @@ constructor(
                 _state.update { it.copy(isLoading = true, error = null) }
                 try {
                     val loaded = loader.load(date)
-                    _state.update { loaded.copy(mode = it.mode) }
+                    _state.update { loaded.copy(mode = it.mode, result = it.result) }
                 } catch (exception: CancellationException) {
                     throw exception
                 } catch (exception: Exception) {

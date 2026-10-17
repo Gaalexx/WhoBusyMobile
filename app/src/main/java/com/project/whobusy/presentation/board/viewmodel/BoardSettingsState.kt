@@ -10,4 +10,5 @@ data class BoardSettingsState(
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
     @param:StringRes val error: Int? = null,
+    val isSaved: Boolean = false,
 )

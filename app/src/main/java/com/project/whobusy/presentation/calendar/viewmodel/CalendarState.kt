@@ -21,5 +21,6 @@ data class CalendarState(
     val series: List<CalendarEvent> = emptyList(),
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
+    val result: CalendarEffect? = null,
     @param:StringRes val error: Int? = null,
 )

@@ -90,6 +90,7 @@ sealed class ScreenTypes : NavKey {
     @Serializable
     data class EventDetails(
         val eventId: Int,
+        val occurrenceStart: String? = null,
     ) : ScreenTypes()
 
     @Serializable

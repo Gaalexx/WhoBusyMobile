@@ -9,10 +9,8 @@ import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -26,8 +24,6 @@ constructor(
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(UserEditorState())
     val state = mutableState.asStateFlow()
-    private val effectChannel = Channel<UserEditorEffect>(Channel.BUFFERED)
-    val effects = effectChannel.receiveAsFlow()
     private var loadJob: Job? = null
 
     init {
@@ -39,7 +35,11 @@ constructor(
     }
 
     fun onEvent(command: UserEditorCommand) {
-        if (state.value.isSaving) return
+        if (command == UserEditorCommand.ResultHandled) {
+            mutableState.update { it.copy(isFinished = false) }
+            return
+        }
+        if (state.value.isSaving || state.value.isFinished) return
         when (command) {
             is UserEditorCommand.Load -> load(command.userId)
             is UserEditorCommand.LoginChanged ->
@@ -90,6 +90,7 @@ constructor(
 
             UserEditorCommand.CancelDelete -> mutableState.update { it.copy(showDeleteConfirmation = false) }
             UserEditorCommand.ConfirmDelete -> delete()
+            UserEditorCommand.ResultHandled -> Unit
         }
     }
 
@@ -162,8 +163,7 @@ constructor(
                         password = current.password.takeIf { it.isNotEmpty() },
                     ),
                 ).onSuccess {
-                    mutableState.update { it.copy(isSaving = false, password = "") }
-                    effectChannel.send(UserEditorEffect.Saved)
+                    mutableState.update { it.copy(isSaving = false, password = "", isFinished = true) }
                 }.onFailure(::onFailure)
         }
     }
@@ -176,8 +176,7 @@ constructor(
             workspaceRepository
                 .deleteUser(requireNotNull(current.userId))
                 .onSuccess {
-                    mutableState.update { it.copy(isSaving = false) }
-                    effectChannel.send(UserEditorEffect.Deleted)
+                    mutableState.update { it.copy(isSaving = false, isFinished = true) }
                 }.onFailure(::onFailure)
         }
     }

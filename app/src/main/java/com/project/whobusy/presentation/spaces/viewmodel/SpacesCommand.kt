@@ -63,4 +63,6 @@ sealed interface SpacesCommand {
     data object ShowPlans : SpacesCommand
 
     data object CopyCode : SpacesCommand
+
+    data object ResultHandled : SpacesCommand
 }

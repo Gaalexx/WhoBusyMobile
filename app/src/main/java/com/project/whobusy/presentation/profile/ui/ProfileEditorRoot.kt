@@ -6,7 +6,7 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
-import com.project.whobusy.presentation.profile.viewmodel.ProfileEditorEffect
+import com.project.whobusy.presentation.profile.viewmodel.ProfileEditorCommand
 import com.project.whobusy.presentation.profile.viewmodel.ProfileEditorViewModel
 
 @Composable
@@ -16,11 +16,10 @@ fun ProfileEditorRoot(
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentOnBack by rememberUpdatedState(onBack)
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                ProfileEditorEffect.Saved -> currentOnBack()
-            }
+    LaunchedEffect(state.isSaved) {
+        if (state.isSaved) {
+            viewModel.onEvent(ProfileEditorCommand.ResultHandled)
+            currentOnBack()
         }
     }
     ProfileEditorScreen(state, viewModel::onEvent, onBack)

@@ -10,7 +10,6 @@ import com.project.whobusy.data.session.SessionStore
 import com.project.whobusy.domain.model.BoardSettings
 import com.project.whobusy.domain.model.EventDraft
 import com.project.whobusy.presentation.calendar.model.expandRecurringEvents
-import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarLoader
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarViewModel
 import com.project.whobusy.presentation.event.model.EventFormState
@@ -80,10 +79,10 @@ class CalendarOpenedSeriesTest {
                     LocalDateTime.parse("2026-10-18T00:00"),
                 ).single()
 
-            viewModel.onEvent(CalendarCommand.OpenEvent(occurrence))
+            viewModel.rememberEvent(occurrence)
             val draft = EventFormState.initial(LocalDate.of(2026, 10, 17), viewModel.series(original.id)).toDraft()
 
-            assertEquals(occurrence.start, viewModel.event(original.id)?.start)
+            assertEquals(occurrence.start, viewModel.event(original.id, occurrence.start.toString())?.start)
             assertEquals(original.start, draft.start)
             assertEquals(original.end, draft.end)
             assertEquals(original.recurrenceRule, draft.recurrenceRule)

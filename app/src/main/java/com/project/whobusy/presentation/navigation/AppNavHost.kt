@@ -15,10 +15,10 @@ import androidx.navigation3.runtime.entryProvider
 import androidx.navigation3.runtime.rememberNavBackStack
 import androidx.navigation3.runtime.rememberSaveableStateHolderNavEntryDecorator
 import androidx.navigation3.ui.NavDisplay
+import com.project.whobusy.domain.model.CalendarEvent
 import com.project.whobusy.presentation.board.ui.BoardSettingsRoot
 import com.project.whobusy.presentation.calendar.ui.CalendarRoot
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
-import com.project.whobusy.presentation.calendar.viewmodel.CalendarEffect
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarViewModel
 import com.project.whobusy.presentation.event.ui.EventDatesRoot
 import com.project.whobusy.presentation.event.ui.EventDetailsRoot
@@ -26,7 +26,6 @@ import com.project.whobusy.presentation.event.ui.EventEditorRoot
 import com.project.whobusy.presentation.event.ui.EventUnavailableScreen
 import com.project.whobusy.presentation.event.ui.EventVisibilityRoot
 import com.project.whobusy.presentation.event.ui.SpaceVisibilityRoot
-import com.project.whobusy.presentation.event.viewmodel.EditorEffect
 import com.project.whobusy.presentation.event.viewmodel.EventEditorViewModel
 import com.project.whobusy.presentation.login.ui.LoginRoot
 import com.project.whobusy.presentation.profile.ui.ProfileEditorRoot
@@ -57,7 +56,10 @@ fun AppNavHost(userId: Int?) {
             Unit
         }
         val onBack: () -> Unit = {
-            if (calendar?.state?.value?.isSaving != true && editor?.state?.value?.isSaving != true &&
+            val calendarState = calendar?.state?.value
+            val editorState = editor?.state?.value
+            if (calendarState?.isSaving != true && calendarState?.result == null &&
+                editorState?.isSaving != true && editorState?.isSaved != true &&
                 backStack.size > 1
             ) {
                 if (backStack.lastOrNull() is ScreenTypes.EventEditor) editor?.reset()
@@ -87,31 +89,9 @@ fun AppNavHost(userId: Int?) {
             backStack.navigateTo(ScreenTypes.SpaceDetails(id))
             refresh()
         }
-        LaunchedEffect(editor) {
-            editor?.effects?.collect { effect ->
-                when (effect) {
-                    EditorEffect.Saved -> finishEvent()
-                }
-            }
-        }
-        LaunchedEffect(calendar) {
-            calendar?.effects?.collect { effect ->
-                when (effect) {
-                    is CalendarEffect.OpenEvent -> backStack.navigateTo(ScreenTypes.EventDetails(effect.eventId))
-                    is CalendarEffect.CreateEvent -> backStack.navigateTo(ScreenTypes.EventEditor(effect.date))
-                    is CalendarEffect.EditEvent ->
-                        backStack.navigateTo(
-                            ScreenTypes.EventEditor(
-                                calendar.state.value.selectedDate
-                                    .toString(),
-                                effect.eventId,
-                            ),
-                        )
-
-                    CalendarEffect.OpenCalendars -> backStack.navigateTo(ScreenTypes.BoardSettings)
-                    CalendarEffect.EventSaved, CalendarEffect.EventDeleted -> finishEvent()
-                }
-            }
+        val openEvent: (CalendarEvent) -> Unit = { event ->
+            checkNotNull(calendar).rememberEvent(event)
+            backStack.navigateTo(event.detailsRoute())
         }
         Box(Modifier.fillMaxSize()) {
             NavDisplay(
@@ -131,7 +111,14 @@ fun AppNavHost(userId: Int?) {
                             )
                         }
                         entry<ScreenTypes.Registration> { RegistrationRoot(onBack = onBack) }
-                        entry<ScreenTypes.Calendar> { CalendarRoot(checkNotNull(calendar)) }
+                        entry<ScreenTypes.Calendar> {
+                            CalendarRoot(
+                                viewModel = checkNotNull(calendar),
+                                onOpenEvent = openEvent,
+                                onCreateEvent = { backStack.navigateTo(ScreenTypes.EventEditor(it)) },
+                                onBoardSettings = { backStack.navigateTo(ScreenTypes.BoardSettings) },
+                            )
+                        }
                         entry<ScreenTypes.Calendars> {
                             SpacesRoot(
                                 onOpenSpace = openSpace,
@@ -184,7 +171,7 @@ fun AppNavHost(userId: Int?) {
                                         ),
                                     )
                                 },
-                                onOpenEvent = { calendar?.onEvent(CalendarCommand.OpenEvent(it)) },
+                                onOpenEvent = openEvent,
                                 onLeave = { backStack.navigateTo(ScreenTypes.LeaveSpace(route.spaceId)) },
                             )
                         }
@@ -224,7 +211,21 @@ fun AppNavHost(userId: Int?) {
                             )
                         }
                         entry<ScreenTypes.EventDetails> { route ->
-                            EventDetailsRoot(route.eventId, onBack, checkNotNull(calendar))
+                            EventDetailsRoot(
+                                eventId = route.eventId,
+                                occurrenceStart = route.occurrenceStart,
+                                onBack = onBack,
+                                onEdit = {
+                                    backStack.navigateTo(
+                                        ScreenTypes.EventEditor(
+                                            checkNotNull(calendar).state.value.selectedDate.toString(),
+                                            eventId = route.eventId,
+                                        ),
+                                    )
+                                },
+                                onDeleted = finishEvent,
+                                viewModel = checkNotNull(calendar),
+                            )
                         }
                         entry<ScreenTypes.EventEditor> { route ->
                             val eventEditor = checkNotNull(editor)
@@ -243,6 +244,7 @@ fun AppNavHost(userId: Int?) {
                                     onBack = onBack,
                                     onVisibility = { backStack.navigateTo(ScreenTypes.EventVisibility) },
                                     onDates = { backStack.navigateTo(ScreenTypes.EventDates) },
+                                    onSaved = finishEvent,
                                 )
                             }
                         }

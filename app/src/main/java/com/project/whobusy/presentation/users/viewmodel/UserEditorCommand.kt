@@ -46,4 +46,6 @@ sealed interface UserEditorCommand {
     data object CancelDelete : UserEditorCommand
 
     data object ConfirmDelete : UserEditorCommand
+
+    data object ResultHandled : UserEditorCommand
 }

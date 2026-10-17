@@ -15,11 +15,9 @@ import com.project.whobusy.presentation.event.model.EventFormState
 import com.project.whobusy.presentation.event.model.withAllDay
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
@@ -38,8 +36,6 @@ constructor(
 ) : ViewModel() {
     private val _state = MutableStateFlow(EditorState(form = EventFormState.initial(LocalDate.now(clock), null)))
     val state = _state.asStateFlow()
-    private val effectChannel = Channel<EditorEffect>(Channel.BUFFERED)
-    val effects = effectChannel.receiveAsFlow()
     private var initializedKey: String? = null
     private var loadJob: Job? = null
     private var saveJob: Job? = null
@@ -102,9 +98,13 @@ constructor(
     }
 
     fun onEvent(command: EditorCommand) {
+        if (command == EditorCommand.ResultHandled) {
+            _state.update { it.copy(isSaved = false) }
+            return
+        }
         if (_state.value.isSaving || _state.value.isLoading) return
         if (command == EditorCommand.Save) {
-            save()
+            if (!_state.value.isSaved) save()
             return
         }
         val current = _state.value
@@ -153,7 +153,7 @@ constructor(
                     )
                 }
 
-                EditorCommand.Save -> old
+                EditorCommand.Save, EditorCommand.ResultHandled -> old
             }
         _state.update { it.copy(form = updated.copy(validationError = null), error = null) }
         persist()
@@ -176,8 +176,7 @@ constructor(
             viewModelScope.launch {
                 calendarRepository.saveEvent(form.toDraft(), _state.value.eventId).fold(
                     onSuccess = {
-                        _state.update { it.copy(isSaving = false) }
-                        effectChannel.send(EditorEffect.Saved)
+                        _state.update { it.copy(isSaving = false, isSaved = true) }
                     },
                     onFailure = { failure ->
                         if (failure is AuthenticationException) authRepository.logout()

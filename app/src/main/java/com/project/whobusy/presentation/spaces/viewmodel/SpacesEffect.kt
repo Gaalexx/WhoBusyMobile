@@ -5,10 +5,6 @@ sealed interface SpacesEffect {
         val spaceId: Int,
     ) : SpacesEffect
 
-    data class CopyCode(
-        val value: String,
-    ) : SpacesEffect
-
     data object MemberSaved : SpacesEffect
 
     data object Left : SpacesEffect

@@ -13,12 +13,10 @@ import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.first
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
@@ -38,13 +36,18 @@ constructor(
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(SpacesState(today = LocalDate.now(clock)))
     val state = mutableState.asStateFlow()
-    private val effectChannel = Channel<SpacesEffect>(Channel.BUFFERED)
-    val effects = effectChannel.receiveAsFlow()
     private var initializedRoute: Pair<Int?, Int?>? = null
     private var loadJob: Job? = null
 
     fun onEvent(command: SpacesCommand) {
-        if (mutableState.value.isSaving || (mutableState.value.isLoading && command !is SpacesCommand.Load)) return
+        if (command == SpacesCommand.ResultHandled) {
+            mutableState.update { it.copy(result = null) }
+            return
+        }
+        val current = mutableState.value
+        if (current.result != null || current.isSaving ||
+            (current.isLoading && command !is SpacesCommand.Load)
+        ) return
         when (command) {
             is SpacesCommand.Load -> load(command.spaceId, command.memberId)
             is SpacesCommand.NameChanged ->
@@ -70,8 +73,7 @@ constructor(
             is SpacesCommand.SuccessorSelected -> mutableState.update { it.copy(successorId = command.userId) }
             SpacesCommand.ShowPlans -> mutableState.update { it.copy(showPlans = true) }
             SpacesCommand.CopyCode ->
-                mutableState.value.space?.inviteCode?.let { code ->
-                    viewModelScope.launch { effectChannel.send(SpacesEffect.CopyCode(code)) }
+                mutableState.value.space?.inviteCode?.let {
                     mutableState.update { it.copy(message = R.string.spaces_key_copied) }
                 }
 
@@ -199,19 +201,19 @@ constructor(
         current: SpacesState,
     ) {
         when (command) {
-            SpacesCommand.Create ->
-                effectChannel.send(
-                    SpacesEffect.OpenSpace(workspace.createSpace(current.name).getOrThrow().id),
-                )
+            SpacesCommand.Create -> {
+                val space = workspace.createSpace(current.name).getOrThrow()
+                mutableState.update { it.copy(result = SpacesEffect.OpenSpace(space.id)) }
+            }
 
-            SpacesCommand.Join ->
-                effectChannel.send(
-                    SpacesEffect.OpenSpace(workspace.joinSpace(current.code).getOrThrow().id),
-                )
+            SpacesCommand.Join -> {
+                val space = workspace.joinSpace(current.code).getOrThrow()
+                mutableState.update { it.copy(result = SpacesEffect.OpenSpace(space.id)) }
+            }
 
             is SpacesCommand.AcceptInvitation -> {
                 val space = workspace.acceptInvitation(command.invitationId).getOrThrow()
-                effectChannel.send(SpacesEffect.OpenSpace(space.id))
+                mutableState.update { it.copy(result = SpacesEffect.OpenSpace(space.id)) }
             }
 
             is SpacesCommand.DeclineInvitation -> {
@@ -237,12 +239,12 @@ constructor(
 
             SpacesCommand.Delete -> {
                 workspace.deleteSpace(spaceId).getOrThrow()
-                effectChannel.send(SpacesEffect.Deleted)
+                mutableState.update { it.copy(result = SpacesEffect.Deleted) }
             }
 
             SpacesCommand.Leave -> {
                 workspace.leaveSpace(spaceId).getOrThrow()
-                effectChannel.send(SpacesEffect.Left)
+                mutableState.update { it.copy(result = SpacesEffect.Left) }
             }
 
             SpacesCommand.TransferAdmin -> {
@@ -263,20 +265,14 @@ constructor(
                         requireNotNull(current.memberId),
                         current.selectedRole,
                     ).getOrThrow()
-                effectChannel.send(SpacesEffect.MemberSaved)
+                mutableState.update { it.copy(result = SpacesEffect.MemberSaved) }
             }
 
             SpacesCommand.RemoveMember -> {
                 workspace.removeMember(spaceId, requireNotNull(current.memberId)).getOrThrow()
-                effectChannel.send(
-                    if (current.memberId ==
-                        current.currentUserId
-                    ) {
-                        SpacesEffect.Left
-                    } else {
-                        SpacesEffect.MemberSaved
-                    },
-                )
+                val result =
+                    if (current.memberId == current.currentUserId) SpacesEffect.Left else SpacesEffect.MemberSaved
+                mutableState.update { it.copy(result = result) }
             }
 
             SpacesCommand.Invite -> {

@@ -31,10 +31,6 @@ sealed interface CalendarCommand {
         val eventId: Int? = null,
     ) : CalendarCommand
 
-    data class EditEvent(
-        val eventId: Int,
-    ) : CalendarCommand
-
     data class DeleteEvent(
         val eventId: Int,
     ) : CalendarCommand
@@ -48,6 +44,8 @@ sealed interface CalendarCommand {
     data object OpenCalendars : CalendarCommand
 
     data object ClearError : CalendarCommand
+
+    data object ResultHandled : CalendarCommand
 
     data object Logout : CalendarCommand
 }

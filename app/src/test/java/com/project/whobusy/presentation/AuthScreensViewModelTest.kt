@@ -7,22 +7,21 @@ import com.project.whobusy.data.mock.MockAuthRepository
 import com.project.whobusy.data.mock.MockWorkspaceRepository
 import com.project.whobusy.data.session.SessionStore
 import com.project.whobusy.domain.model.UserRole
+import com.project.whobusy.presentation.board.viewmodel.BoardSettingsCommand
+import com.project.whobusy.presentation.board.viewmodel.BoardSettingsViewModel
 import com.project.whobusy.presentation.login.viewmodel.LoginCommand
 import com.project.whobusy.presentation.login.viewmodel.LoginDefaults
 import com.project.whobusy.presentation.login.viewmodel.LoginViewModel
 import com.project.whobusy.presentation.profile.viewmodel.ProfileCommand
 import com.project.whobusy.presentation.profile.viewmodel.ProfileEditorCommand
-import com.project.whobusy.presentation.profile.viewmodel.ProfileEditorEffect
 import com.project.whobusy.presentation.profile.viewmodel.ProfileEditorViewModel
 import com.project.whobusy.presentation.profile.viewmodel.ProfileViewModel
 import com.project.whobusy.presentation.register.viewmodel.RegistrationCommand
 import com.project.whobusy.presentation.register.viewmodel.RegistrationViewModel
 import com.project.whobusy.presentation.users.viewmodel.UserEditorCommand
-import com.project.whobusy.presentation.users.viewmodel.UserEditorEffect
 import com.project.whobusy.presentation.users.viewmodel.UserEditorViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.async
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
@@ -117,7 +116,7 @@ class AuthScreensViewModelTest {
         }
 
     @Test
-    fun editorKeepsFailedPasswordChangeOpenAndEmitsSavedOnlyAfterSuccessfulRetry() =
+    fun editorKeepsFailedPasswordChangeOpenAndRetainsSavedUntilHandled() =
         runTest {
             auth.login("demo", DemoAccount.PASSWORD).getOrThrow()
             val viewModel = ProfileEditorViewModel(auth, workspace)
@@ -133,18 +132,27 @@ class AuthScreensViewModelTest {
             assertEquals(R.string.auth_error_current_password, viewModel.state.value.currentPasswordError)
             assertEquals(DemoAccount.user, session.getUser())
             assertEquals("Новое", viewModel.state.value.firstName)
+            assertFalse(viewModel.state.value.isSaved)
 
-            val effect = async { viewModel.effects.first() }
             viewModel.onEvent(ProfileEditorCommand.CurrentPasswordChanged(DemoAccount.PASSWORD))
             viewModel.onEvent(ProfileEditorCommand.Save)
             advanceUntilIdle()
 
-            assertEquals(ProfileEditorEffect.Saved, effect.await())
+            assertTrue(viewModel.state.first().isSaved)
             assertEquals("Новое", session.getUser()?.firstName)
             assertNull(session.getUser()?.email)
             assertEquals(session.getUser(), accounts.authenticate("demo", "changed"))
             assertEquals("", viewModel.state.value.currentPassword)
             assertEquals("", viewModel.state.value.newPassword)
+
+            val completedState = viewModel.state.value
+            viewModel.onEvent(ProfileEditorCommand.FirstNameChanged("Не должно сохраниться"))
+            viewModel.onEvent(ProfileEditorCommand.Save)
+            advanceUntilIdle()
+            assertEquals(completedState, viewModel.state.value)
+            assertEquals("Новое", session.getUser()?.firstName)
+            viewModel.onEvent(ProfileEditorCommand.ResultHandled)
+            assertFalse(viewModel.state.value.isSaved)
         }
 
     @Test
@@ -175,12 +183,18 @@ class AuthScreensViewModelTest {
             creator.onEvent(UserEditorCommand.LoginChanged("managed.user"))
             creator.onEvent(UserEditorCommand.FirstNameChanged("Новый"))
             creator.onEvent(UserEditorCommand.PasswordChanged("password"))
-            val saved = async { creator.effects.first() }
             creator.onEvent(UserEditorCommand.Save)
             advanceUntilIdle()
 
-            assertEquals(UserEditorEffect.Saved, saved.await())
+            assertTrue(creator.state.first().isFinished)
             val created = accounts.authenticate("managed.user", "password")
+            val completedState = creator.state.value
+            creator.onEvent(UserEditorCommand.Save)
+            advanceUntilIdle()
+            assertEquals(completedState, creator.state.value)
+            creator.onEvent(UserEditorCommand.ResultHandled)
+            assertFalse(creator.state.value.isFinished)
+
             val editor = UserEditorViewModel(auth, workspace)
             editor.onEvent(UserEditorCommand.Load(created.id))
             advanceUntilIdle()
@@ -191,13 +205,19 @@ class AuthScreensViewModelTest {
             editor.onEvent(UserEditorCommand.ConfirmDelete)
             advanceUntilIdle()
             assertTrue(accounts.users.value.any { it.id == created.id })
+            assertFalse(editor.state.value.isFinished)
 
-            val deleted = async { editor.effects.first() }
             editor.onEvent(UserEditorCommand.RequestDelete)
             editor.onEvent(UserEditorCommand.ConfirmDelete)
             advanceUntilIdle()
-            assertEquals(UserEditorEffect.Deleted, deleted.await())
+            assertTrue(editor.state.first().isFinished)
             assertFalse(accounts.users.value.any { it.id == created.id })
+            editor.onEvent(UserEditorCommand.Save)
+            advanceUntilIdle()
+            assertTrue(editor.state.value.isFinished)
+            assertNull(editor.state.value.error)
+            editor.onEvent(UserEditorCommand.ResultHandled)
+            assertFalse(editor.state.value.isFinished)
         }
 
     @Test
@@ -217,7 +237,54 @@ class AuthScreensViewModelTest {
             advanceUntilIdle()
 
             assertEquals(R.string.admin_error_last_admin, editor.state.value.error)
+            assertFalse(editor.state.value.isFinished)
             assertEquals(UserRole.ADMIN, session.getUser()?.role)
             assertEquals(UserRole.ADMIN, accounts.authenticate("admin", "admin123").role)
+        }
+
+    @Test
+    fun boardSaveRetainsCompletionWithoutRootAndRequiresAcknowledgementBeforeAnotherSave() =
+        runTest {
+            auth.login("demo", DemoAccount.PASSWORD).getOrThrow()
+            val viewModel = BoardSettingsViewModel(workspace)
+            viewModel.onEvent(BoardSettingsCommand.Load)
+            advanceUntilIdle()
+            viewModel.onEvent(BoardSettingsCommand.OnlyOwn)
+            viewModel.onEvent(BoardSettingsCommand.Save)
+            advanceUntilIdle()
+
+            assertTrue(viewModel.state.first().isSaved)
+            assertFalse(viewModel.state.value.isSaving)
+            assertTrue(workspace.getBoardSettings().getOrThrow().spaceIds.isEmpty())
+            val completedState = viewModel.state.value
+            viewModel.onEvent(BoardSettingsCommand.AllSpaces)
+            viewModel.onEvent(BoardSettingsCommand.Save)
+            advanceUntilIdle()
+            assertEquals(completedState, viewModel.state.value)
+
+            viewModel.onEvent(BoardSettingsCommand.ResultHandled)
+            assertFalse(viewModel.state.value.isSaved)
+            viewModel.onEvent(BoardSettingsCommand.AllSpaces)
+            viewModel.onEvent(BoardSettingsCommand.Save)
+            advanceUntilIdle()
+            assertTrue(viewModel.state.value.isSaved)
+            assertEquals(setOf(1, 2, 3), workspace.getBoardSettings().getOrThrow().spaceIds)
+        }
+
+    @Test
+    fun failedBoardSaveDoesNotSetCompletion() =
+        runTest {
+            auth.login("demo", DemoAccount.PASSWORD).getOrThrow()
+            val viewModel = BoardSettingsViewModel(workspace)
+            viewModel.onEvent(BoardSettingsCommand.Load)
+            advanceUntilIdle()
+            auth.logout()
+
+            viewModel.onEvent(BoardSettingsCommand.Save)
+            advanceUntilIdle()
+
+            assertFalse(viewModel.state.value.isSaved)
+            assertFalse(viewModel.state.value.isSaving)
+            assertEquals(R.string.spaces_error_action, viewModel.state.value.error)
         }
 }

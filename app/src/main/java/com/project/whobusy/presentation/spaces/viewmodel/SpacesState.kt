@@ -25,6 +25,7 @@ data class SpacesState(
     val showPlans: Boolean = false,
     val isLoading: Boolean = false,
     val isSaving: Boolean = false,
+    val result: SpacesEffect? = null,
     @param:StringRes val error: Int? = null,
     @param:StringRes val message: Int? = null,
     val today: LocalDate = LocalDate.of(2026, 10, 17),

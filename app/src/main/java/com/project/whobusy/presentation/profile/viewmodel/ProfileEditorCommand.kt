@@ -26,4 +26,6 @@ sealed interface ProfileEditorCommand {
     ) : ProfileEditorCommand
 
     data object Save : ProfileEditorCommand
+
+    data object ResultHandled : ProfileEditorCommand
 }

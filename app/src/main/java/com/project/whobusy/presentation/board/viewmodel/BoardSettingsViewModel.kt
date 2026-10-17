@@ -7,10 +7,8 @@ import com.project.whobusy.domain.model.BoardSettings
 import com.project.whobusy.domain.repository.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
 import kotlinx.coroutines.CancellationException
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -23,16 +21,19 @@ constructor(
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(BoardSettingsState())
     val state = mutableState.asStateFlow()
-    private val savedChannel = Channel<Unit>(Channel.BUFFERED)
-    val saved = savedChannel.receiveAsFlow()
     private var initialized = false
 
     fun onEvent(command: BoardSettingsCommand) {
+        if (command == BoardSettingsCommand.ResultHandled) {
+            mutableState.update { it.copy(isSaved = false) }
+            return
+        }
         val current = mutableState.value
-        if (current.isLoading || current.isSaving) return
+        if (current.isLoading || current.isSaving || current.isSaved) return
         when (command) {
             BoardSettingsCommand.Load -> load()
             BoardSettingsCommand.Save -> save()
+            BoardSettingsCommand.ResultHandled -> Unit
             BoardSettingsCommand.OnlyOwn -> mutableState.update { it.copy(settings = BoardSettings(emptySet())) }
             BoardSettingsCommand.AllSpaces ->
                 mutableState.update {
@@ -98,9 +99,10 @@ constructor(
         viewModelScope.launch {
             repository
                 .saveBoardSettings(mutableState.value.settings)
-                .onSuccess { savedChannel.send(Unit) }
-                .onFailure { mutableState.update { it.copy(error = R.string.spaces_error_action) } }
-            mutableState.update { it.copy(isSaving = false) }
+                .onSuccess { mutableState.update { it.copy(isSaving = false, isSaved = true) } }
+                .onFailure {
+                    mutableState.update { it.copy(isSaving = false, error = R.string.spaces_error_action) }
+                }
         }
     }
 }

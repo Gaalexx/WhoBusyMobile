@@ -11,14 +11,11 @@ import com.project.whobusy.domain.model.CalendarQuery
 import com.project.whobusy.domain.model.EventShare
 import com.project.whobusy.domain.model.EventVisibility
 import com.project.whobusy.presentation.event.viewmodel.EditorCommand
-import com.project.whobusy.presentation.event.viewmodel.EditorEffect
 import com.project.whobusy.presentation.event.viewmodel.EventEditorViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runTest
@@ -108,12 +105,10 @@ class EventEditorViewModelTest {
         }
 
     @Test
-    fun saveCreatesOnePlanWithChosenVisibilityAndEmitsAfterSuccess() =
+    fun saveRetainsSuccessForLateUiAndRejectsDuplicateSaveUntilHandled() =
         runTest {
             auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
             val editor = editor()
-            val effects = mutableListOf<EditorEffect>()
-            backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) { editor.effects.toList(effects) }
             editor.start(date.toString(), null, null)
             advanceUntilIdle()
             editor.onEvent(EditorCommand.Title("План для акторов"))
@@ -122,12 +117,22 @@ class EventEditorViewModelTest {
             editor.onEvent(EditorCommand.Visibility(3, null))
             editor.onEvent(EditorCommand.Save)
             editor.onEvent(EditorCommand.Save)
+            assertFalse(editor.state.value.isSaved)
+            advanceUntilIdle()
+            assertTrue(editor.state.first { it.isSaved }.isSaved)
+            assertFalse(editor.state.value.isSaving)
+            editor.start(date.toString(), null, null)
+            assertTrue(editor.state.value.isSaved)
+            editor.onEvent(EditorCommand.Save)
             advanceUntilIdle()
             val saved = calendar.getEvents(query()).getOrThrow().filter { it.title == "План для акторов" }
             assertEquals(1, saved.size)
             assertEquals(listOf(EventShare(1, EventVisibility.Actors)), saved.single().shares)
-            assertEquals(listOf(EditorEffect.Saved), effects)
-            assertFalse(editor.state.value.isSaving)
+            assertTrue(editor.state.value.isSaved)
+            editor.onEvent(EditorCommand.ResultHandled)
+            assertFalse(editor.state.value.isSaved)
+            editor.onEvent(EditorCommand.ResultHandled)
+            assertFalse(editor.state.value.isSaved)
         }
 
     @Test
@@ -148,6 +153,36 @@ class EventEditorViewModelTest {
         }
 
     @Test
+    fun newFlowAndResetDiscardPendingSaveResult() =
+        runTest {
+            auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
+            val editor = editor()
+            editor.start(date.toString(), null, null)
+            advanceUntilIdle()
+            editor.onEvent(EditorCommand.Title("Первый план"))
+            editor.onEvent(EditorCommand.Save)
+            advanceUntilIdle()
+            assertTrue(editor.state.value.isSaved)
+
+            val nextDate = date.plusDays(1).toString()
+            editor.start(nextDate, null, null)
+            advanceUntilIdle()
+            assertFalse(editor.state.value.isSaved)
+            assertEquals("", editor.state.value.form.title)
+            editor.onEvent(EditorCommand.Title("Второй план"))
+            editor.onEvent(EditorCommand.Save)
+            advanceUntilIdle()
+            assertTrue(editor.state.value.isSaved)
+
+            editor.reset()
+            assertFalse(editor.state.value.isSaved)
+            editor.start(nextDate, null, null)
+            advanceUntilIdle()
+            assertFalse(editor.state.value.isSaved)
+            assertEquals("", editor.state.value.form.title)
+        }
+
+    @Test
     fun invalidDraftStaysOpenAndCanBeCorrected() =
         runTest {
             auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
@@ -157,6 +192,7 @@ class EventEditorViewModelTest {
             editor.onEvent(EditorCommand.Save)
             assertNotNull(editor.state.value.form.validationError)
             assertFalse(editor.state.value.isSaving)
+            assertFalse(editor.state.value.isSaved)
             editor.onEvent(EditorCommand.Title("Исправленный план"))
             assertNull(editor.state.value.form.validationError)
         }

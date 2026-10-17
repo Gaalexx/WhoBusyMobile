@@ -47,4 +47,6 @@ sealed interface EditorCommand {
     ) : EditorCommand
 
     data object Save : EditorCommand
+
+    data object ResultHandled : EditorCommand
 }

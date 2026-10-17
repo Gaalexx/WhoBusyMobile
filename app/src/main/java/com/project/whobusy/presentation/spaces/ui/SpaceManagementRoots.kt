@@ -16,7 +16,7 @@ fun InviteMemberRoot(
     val state = viewModel.state.collectAsStateWithLifecycle().value
     LaunchedEffect(viewModel, spaceId) { viewModel.onEvent(SpacesCommand.Load(spaceId)) }
     SpacesEffects(viewModel)
-    InviteMemberScreen(state, viewModel::onEvent, { if (!state.isSaving) onBack() })
+    InviteMemberScreen(state, rememberSpacesEventHandler(viewModel), { if (!state.isSaving) onBack() })
 }
 
 @Composable

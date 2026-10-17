@@ -13,16 +13,15 @@ import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarEffect
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarLoader
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarViewModel
+import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.flow.toList
-import kotlinx.coroutines.launch
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
-import kotlinx.coroutines.test.TestScope
-import kotlinx.coroutines.test.UnconfinedTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
+import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
 import org.junit.After
@@ -59,84 +58,132 @@ class CalendarViewModelTest {
     }
 
     @Test
-    fun navigationEmitsRouteArgumentsWithoutChangingCalendarState() =
+    fun cachesDistinctOccurrencesWithoutChangingCalendarState() =
         runTest {
             val viewModel = createViewModel()
-            val effects = collectEffects(viewModel)
-            advanceUntilIdle()
-            viewModel.onEvent(CalendarCommand.SelectDate(draft.start.toLocalDate()))
             advanceUntilIdle()
             val state = viewModel.state.value
-            val event = draft.toEvent(42)
-
-            viewModel.onEvent(CalendarCommand.OpenEvent(event))
-            viewModel.onEvent(CalendarCommand.CreateEvent)
-            viewModel.onEvent(CalendarCommand.OpenCalendars)
-            viewModel.onEvent(CalendarCommand.EditEvent(event.id))
-            advanceUntilIdle()
-
-            assertEquals(
-                listOf(
-                    CalendarEffect.OpenEvent(42),
-                    CalendarEffect.CreateEvent("2026-10-20"),
-                    CalendarEffect.OpenCalendars,
-                    CalendarEffect.EditEvent(42),
-                ),
-                effects,
+            val first = draft.toEvent(42).copy(
+                recurrenceRule = "FREQ=DAILY",
+                seriesStart = draft.start,
+                seriesEnd = draft.end,
             )
+            val second = first.copy(start = first.start.plusDays(1), end = first.end.plusDays(1))
+
+            viewModel.rememberEvent(first)
+            viewModel.rememberEvent(second)
+
+            assertEquals(first, viewModel.event(first.id, first.start.toString()))
+            assertEquals(second, viewModel.event(second.id, second.start.toString()))
+            assertEquals(second, viewModel.event(second.id))
+            assertNull(viewModel.event(first.id, first.start.plusDays(2).toString()))
+            assertEquals(first.start, viewModel.series(first.id)?.start)
+            assertEquals(first.end, viewModel.series(first.id)?.end)
             assertEquals(state, viewModel.state.value)
+            assertNull(viewModel.state.value.result)
         }
 
     @Test
-    fun saveUsesExplicitEventIdAndEmitsSuccessAfterMutation() =
+    fun saveCompletionPersistsThroughReloadAndBlocksMutationsUntilHandled() =
         runTest {
             val repository = FakeCalendarRepository()
             val viewModel = createViewModel(repository)
-            val effects = collectEffects(viewModel)
             advanceUntilIdle()
 
-            viewModel.onEvent(CalendarCommand.SaveEvent(draft))
-            assertTrue(viewModel.state.value.isSaving)
-            assertTrue(effects.isEmpty())
-            advanceUntilIdle()
             viewModel.onEvent(CalendarCommand.SaveEvent(draft, eventId = 42))
+            assertTrue(viewModel.state.value.isSaving)
+            assertNull(viewModel.state.value.result)
+            advanceUntilIdle()
+            assertEquals(CalendarEffect.EventSaved(42), viewModel.state.first().result)
+            assertEquals(listOf(42), repository.savedEventIds)
+            assertEquals(2, repository.eventLoadCount)
+
+            viewModel.onEvent(CalendarCommand.Refresh)
+            advanceUntilIdle()
+            assertEquals(CalendarEffect.EventSaved(42), viewModel.state.value.result)
+            viewModel.onEvent(CalendarCommand.SaveEvent(draft))
+            viewModel.onEvent(CalendarCommand.DeleteEvent(42))
+            advanceUntilIdle()
+            assertEquals(listOf(42), repository.savedEventIds)
+            assertTrue(repository.deletedEventIds.isEmpty())
+            assertEquals(CalendarEffect.EventSaved(42), viewModel.state.value.result)
+
+            viewModel.onEvent(CalendarCommand.ResultHandled)
+            assertNull(viewModel.state.value.result)
+            viewModel.onEvent(CalendarCommand.SaveEvent(draft))
             advanceUntilIdle()
 
-            assertEquals(listOf(null, 42), repository.savedEventIds)
-            assertEquals(listOf(CalendarEffect.EventSaved, CalendarEffect.EventSaved), effects)
-            assertEquals(3, repository.eventLoadCount)
+            assertEquals(listOf(42, null), repository.savedEventIds)
+            assertEquals(CalendarEffect.EventSaved(null), viewModel.state.value.result)
+            assertEquals(4, repository.eventLoadCount)
             assertFalse(viewModel.state.value.isSaving)
             assertNull(viewModel.state.value.error)
         }
 
     @Test
-    fun deleteUsesExplicitEventIdAndRefreshesAfterSuccess() =
+    fun deleteUsesExplicitEventIdAndRetainsCompletionUntilHandled() =
         runTest {
             val repository = FakeCalendarRepository()
             val viewModel = createViewModel(repository)
-            val effects = collectEffects(viewModel)
             advanceUntilIdle()
 
             viewModel.onEvent(CalendarCommand.DeleteEvent(42))
             advanceUntilIdle()
 
             assertEquals(listOf(42), repository.deletedEventIds)
-            assertEquals(listOf(CalendarEffect.EventDeleted), effects)
+            assertEquals(CalendarEffect.EventDeleted(42), viewModel.state.first().result)
             assertEquals(2, repository.eventLoadCount)
             assertFalse(viewModel.state.value.isSaving)
+
+            viewModel.onEvent(CalendarCommand.DeleteEvent(43))
+            advanceUntilIdle()
+            assertEquals(listOf(42), repository.deletedEventIds)
+            assertEquals(CalendarEffect.EventDeleted(42), viewModel.state.value.result)
+
+            viewModel.onEvent(CalendarCommand.ResultHandled)
+            assertNull(viewModel.state.value.result)
+            viewModel.onEvent(CalendarCommand.DeleteEvent(43))
+            advanceUntilIdle()
+            assertEquals(listOf(42, 43), repository.deletedEventIds)
+            assertEquals(CalendarEffect.EventDeleted(43), viewModel.state.value.result)
+            assertEquals(3, repository.eventLoadCount)
         }
 
     @Test
-    fun failedMutationsKeepErrorAndDoNotEmitSuccess() =
+    fun acknowledgementDuringRefreshDoesNotRestoreTheHandledCompletion() =
+        runTest {
+            val repository = FakeCalendarRepository()
+            val viewModel = createViewModel(repository)
+            advanceUntilIdle()
+            viewModel.onEvent(CalendarCommand.SaveEvent(draft, eventId = 42))
+            advanceUntilIdle()
+            val pendingLoad = CompletableDeferred<Unit>()
+            repository.pendingLoad = pendingLoad
+
+            viewModel.onEvent(CalendarCommand.Refresh)
+            runCurrent()
+            assertTrue(viewModel.state.value.isLoading)
+            assertEquals(CalendarEffect.EventSaved(42), viewModel.state.value.result)
+            viewModel.onEvent(CalendarCommand.ResultHandled)
+            assertNull(viewModel.state.value.result)
+
+            pendingLoad.complete(Unit)
+            advanceUntilIdle()
+            assertFalse(viewModel.state.value.isLoading)
+            assertNull(viewModel.state.value.result)
+        }
+
+    @Test
+    fun failedMutationsKeepErrorWithoutCompletionAndAllowRetry() =
         runTest {
             val repository = FakeCalendarRepository().apply { mutationError = IllegalStateException("Unavailable") }
             val viewModel = createViewModel(repository)
-            val effects = collectEffects(viewModel)
             advanceUntilIdle()
 
             viewModel.onEvent(CalendarCommand.SaveEvent(draft, eventId = 42))
             advanceUntilIdle()
             assertNotNull(viewModel.state.value.error)
+            assertNull(viewModel.state.value.result)
             assertFalse(viewModel.state.value.isSaving)
             viewModel.onEvent(CalendarCommand.ClearError)
             assertNull(viewModel.state.value.error)
@@ -147,7 +194,13 @@ class CalendarViewModelTest {
             assertFalse(viewModel.state.value.isSaving)
             assertFalse(viewModel.state.value.isLoading)
             assertEquals(1, repository.eventLoadCount)
-            assertTrue(effects.isEmpty())
+            assertNull(viewModel.state.value.result)
+
+            repository.mutationError = null
+            viewModel.onEvent(CalendarCommand.SaveEvent(draft, eventId = 42))
+            advanceUntilIdle()
+            assertEquals(CalendarEffect.EventSaved(42), viewModel.state.value.result)
+            assertNull(viewModel.state.value.error)
         }
 
     @Test
@@ -155,7 +208,6 @@ class CalendarViewModelTest {
         runTest {
             val savedState = SavedStateHandle(mapOf("date" to "2026-10-20", "mode" to CalendarMode.Week.name))
             val viewModel = createViewModel(savedState = savedState)
-            val effects = collectEffects(viewModel)
             advanceUntilIdle()
             assertEquals(LocalDate.of(2026, 10, 20), viewModel.state.value.selectedDate)
             assertEquals(CalendarMode.Week, viewModel.state.value.mode)
@@ -163,7 +215,6 @@ class CalendarViewModelTest {
             val selectedDate = LocalDate.of(2026, 11, 4)
             viewModel.onEvent(CalendarCommand.SelectDate(selectedDate))
             viewModel.onEvent(CalendarCommand.SelectMode(CalendarMode.Month))
-            viewModel.onEvent(CalendarCommand.OpenCalendars)
             advanceUntilIdle()
 
             assertEquals(selectedDate, viewModel.state.value.selectedDate)
@@ -171,7 +222,7 @@ class CalendarViewModelTest {
             assertEquals("2026-11-04", savedState.get<String>("date"))
             assertEquals(CalendarMode.Month.name, savedState.get<String>("mode"))
             assertEquals(setOf("date", "mode"), savedState.keys())
-            assertEquals(listOf(CalendarEffect.OpenCalendars), effects)
+            assertNull(viewModel.state.value.result)
 
             val restored = createViewModel(savedState = savedState)
             advanceUntilIdle()
@@ -187,24 +238,18 @@ class CalendarViewModelTest {
         return CalendarViewModel(repository, auth, CalendarLoader(repository, auth), clock, savedState)
     }
 
-    private fun TestScope.collectEffects(viewModel: CalendarViewModel): List<CalendarEffect> {
-        val effects = mutableListOf<CalendarEffect>()
-        backgroundScope.launch(UnconfinedTestDispatcher(testScheduler)) {
-            viewModel.effects.toList(effects)
-        }
-        return effects
-    }
-
     private class FakeCalendarRepository : CalendarRepository {
         val savedEventIds = mutableListOf<Int?>()
         val deletedEventIds = mutableListOf<Int>()
         var eventLoadCount = 0
         var mutationError: Exception? = null
+        var pendingLoad: CompletableDeferred<Unit>? = null
 
         override suspend fun getUsers(): Result<List<CalendarUser>> = Result.success(listOf(DemoAccount.user))
 
         override suspend fun getEvents(query: CalendarQuery): Result<List<CalendarEvent>> {
             eventLoadCount++
+            pendingLoad?.await()
             return Result.success(emptyList())
         }
 

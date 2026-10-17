@@ -3,6 +3,9 @@ package com.project.whobusy.presentation.spaces.ui
 import androidx.activity.compose.BackHandler
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
@@ -59,7 +62,6 @@ fun InvitationsRoot(
     InvitationsScreen(state, viewModel::onEvent, { if (!state.isSaving) onBack() })
 }
 
-@Suppress("DEPRECATION")
 @Composable
 internal fun SpacesEffects(
     viewModel: SpacesViewModel,
@@ -68,17 +70,42 @@ internal fun SpacesEffects(
     onLeft: () -> Unit = {},
     onDeleted: () -> Unit = {},
 ) {
-    val clipboard = LocalClipboardManager.current
     val state = viewModel.state.collectAsStateWithLifecycle().value
+    val onOpenSpaceUpdated by rememberUpdatedState(onOpenSpace)
+    val onMemberSavedUpdated by rememberUpdatedState(onMemberSaved)
+    val onLeftUpdated by rememberUpdatedState(onLeft)
+    val onDeletedUpdated by rememberUpdatedState(onDeleted)
+    val result = state.result
     BackHandler(state.isSaving) {}
-    LaunchedEffect(viewModel) {
-        viewModel.effects.collect { effect ->
-            when (effect) {
-                is SpacesEffect.OpenSpace -> onOpenSpace(effect.spaceId)
-                is SpacesEffect.CopyCode -> clipboard.setText(AnnotatedString(effect.value))
-                SpacesEffect.MemberSaved -> onMemberSaved()
-                SpacesEffect.Left -> onLeft()
-                SpacesEffect.Deleted -> onDeleted()
+    LaunchedEffect(viewModel, result) {
+        if (result != null) {
+            viewModel.onEvent(SpacesCommand.ResultHandled)
+            when (result) {
+                is SpacesEffect.OpenSpace -> onOpenSpaceUpdated(result.spaceId)
+                SpacesEffect.MemberSaved -> onMemberSavedUpdated()
+                SpacesEffect.Left -> onLeftUpdated()
+                SpacesEffect.Deleted -> onDeletedUpdated()
+            }
+        }
+    }
+}
+
+@Suppress("DEPRECATION")
+@Composable
+internal fun rememberSpacesEventHandler(viewModel: SpacesViewModel): (SpacesCommand) -> Unit {
+    val clipboard by rememberUpdatedState(LocalClipboardManager.current)
+    return remember(viewModel) {
+        { command ->
+            if (command == SpacesCommand.CopyCode) {
+                val state = viewModel.state.value
+                if (!state.isLoading && !state.isSaving && state.result == null) {
+                    state.space?.inviteCode?.let { code ->
+                        clipboard.setText(AnnotatedString(code))
+                        viewModel.onEvent(command)
+                    }
+                }
+            } else {
+                viewModel.onEvent(command)
             }
         }
     }

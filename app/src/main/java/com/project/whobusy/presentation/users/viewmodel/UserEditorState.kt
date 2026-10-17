@@ -20,6 +20,7 @@ data class UserEditorState(
     val isActive: Boolean = true,
     val showDeleteConfirmation: Boolean = false,
     @param:StringRes val error: Int? = null,
+    val isFinished: Boolean = false,
 ) {
     val canDelete: Boolean get() = userId != null && userId != actingUserId && isAdmin
 }

@@ -18,6 +18,11 @@ fun UserEditorRoot(
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentOnBack by rememberUpdatedState(onBack)
     LaunchedEffect(userId) { viewModel.onEvent(UserEditorCommand.Load(userId)) }
-    LaunchedEffect(viewModel) { viewModel.effects.collect { currentOnBack() } }
+    LaunchedEffect(state.isFinished) {
+        if (state.isFinished) {
+            viewModel.onEvent(UserEditorCommand.ResultHandled)
+            currentOnBack()
+        }
+    }
     UserEditorScreen(state, viewModel::onEvent, onBack)
 }

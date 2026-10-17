@@ -7,10 +7,8 @@ import com.project.whobusy.domain.model.ProfileDraft
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
-import kotlinx.coroutines.channels.Channel
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
-import kotlinx.coroutines.flow.receiveAsFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import javax.inject.Inject
@@ -24,8 +22,6 @@ constructor(
 ) : ViewModel() {
     private val mutableState = MutableStateFlow(ProfileEditorState())
     val state = mutableState.asStateFlow()
-    private val effectChannel = Channel<ProfileEditorEffect>(Channel.BUFFERED)
-    val effects = effectChannel.receiveAsFlow()
 
     init {
         viewModelScope.launch {
@@ -46,7 +42,11 @@ constructor(
     }
 
     fun onEvent(command: ProfileEditorCommand) {
-        if (state.value.isSaving) return
+        if (command == ProfileEditorCommand.ResultHandled) {
+            mutableState.update { it.copy(isSaved = false) }
+            return
+        }
+        if (state.value.isSaving || state.value.isSaved) return
         when (command) {
             is ProfileEditorCommand.FirstNameChanged ->
                 mutableState.update { it.copy(firstName = command.value, firstNameError = null, error = null) }
@@ -69,6 +69,7 @@ constructor(
                 mutableState.update { it.copy(newPassword = command.value, passwordError = null, error = null) }
 
             ProfileEditorCommand.Save -> save()
+            ProfileEditorCommand.ResultHandled -> Unit
         }
     }
 
@@ -125,8 +126,9 @@ constructor(
                         currentPassword = current.currentPassword.takeIf { it.isNotEmpty() },
                     ),
                 ).onSuccess {
-                    mutableState.update { it.copy(isSaving = false, currentPassword = "", newPassword = "") }
-                    effectChannel.send(ProfileEditorEffect.Saved)
+                    mutableState.update {
+                        it.copy(isSaving = false, currentPassword = "", newPassword = "", isSaved = true)
+                    }
                 }.onFailure { error ->
                     mutableState.update {
                         when (error.message) {

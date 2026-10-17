@@ -5,6 +5,8 @@ sealed interface BoardSettingsCommand {
 
     data object Save : BoardSettingsCommand
 
+    data object ResultHandled : BoardSettingsCommand
+
     data object OnlyOwn : BoardSettingsCommand
 
     data object AllSpaces : BoardSettingsCommand

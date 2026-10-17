@@ -12,9 +12,6 @@ data class EditorState(
     val canChangeVisibility: Boolean = true,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
+    val isSaved: Boolean = false,
     @param:StringRes val error: Int? = null,
 )
-
-sealed interface EditorEffect {
-    data object Saved : EditorEffect
-}

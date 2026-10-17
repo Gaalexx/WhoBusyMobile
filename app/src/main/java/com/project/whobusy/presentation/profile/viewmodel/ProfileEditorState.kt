@@ -18,4 +18,5 @@ data class ProfileEditorState(
     @param:StringRes val passwordError: Int? = null,
     @param:StringRes val currentPasswordError: Int? = null,
     @param:StringRes val error: Int? = null,
+    val isSaved: Boolean = false,
 )

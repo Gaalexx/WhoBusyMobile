@@ -45,12 +45,15 @@ fun EventDateTimePicker(
         DatePickerDialog(
             onDismissRequest = onDismiss,
             confirmButton = {
-                WhoBusyTextButton(stringResource(if (allDay) R.string.action_select else R.string.action_next), {
-                    datePicker.selectedDateMillis?.let { millis ->
-                        val date = Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toLocalDate()
-                        if (allDay) onSelected(date.atStartOfDay()) else selectedDate = date
+                WhoBusyTextButton(
+                    stringResource(if (allDay) R.string.action_select else R.string.action_next),
+                    {
+                        datePicker.selectedDateMillis?.let { millis ->
+                            val date = Instant.ofEpochMilli(millis).atOffset(ZoneOffset.UTC).toLocalDate()
+                            if (allDay) onSelected(date.atStartOfDay()) else selectedDate = date
+                        }
                     }
-                })
+                )
             },
             dismissButton = { WhoBusyTextButton(stringResource(R.string.action_cancel), onDismiss) },
         ) { DatePicker(datePicker) }
@@ -61,9 +64,12 @@ fun EventDateTimePicker(
             title = { Text(stringResource(R.string.label_time)) },
             text = { TimePicker(time) },
             confirmButton = {
-                WhoBusyTextButton(stringResource(R.string.action_select), {
-                    onSelected(selectedDate!!.atTime(time.hour, time.minute))
-                })
+                WhoBusyTextButton(
+                    stringResource(R.string.action_select),
+                    {
+                        onSelected(selectedDate!!.atTime(time.hour, time.minute))
+                    }
+                )
             },
             dismissButton = { WhoBusyTextButton(stringResource(R.string.action_cancel), onDismiss) },
         )

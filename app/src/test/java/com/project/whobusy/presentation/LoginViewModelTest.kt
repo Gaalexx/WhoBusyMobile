@@ -23,11 +23,13 @@ import org.junit.Test
 
 @OptIn(ExperimentalCoroutinesApi::class)
 class LoginViewModelTest {
-    @Before fun setUp() {
+    @Before
+    fun setUp() {
         Dispatchers.setMain(StandardTestDispatcher())
     }
 
-    @After fun tearDown() {
+    @After
+    fun tearDown() {
         Dispatchers.resetMain()
     }
 

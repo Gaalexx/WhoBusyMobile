@@ -1,0 +1,27 @@
+<resources>
+    <string name="admin_users">Пользователи</string>
+    <string name="admin_create_user">Создать пользователя</string>
+    <string name="admin_edit_user">Редактировать пользователя</string>
+    <string name="admin_save_user">Сохранить</string>
+    <string name="admin_accounts_notice_title">Управление аккаунтами</string>
+    <string name="admin_accounts_notice_body">Глобальная роль администратора позволяет управлять аккаунтами. Доступ к планам определяется ролями в пространствах.</string>
+    <string name="admin_user_subtitle">%1$s · %2$s · %3$s</string>
+    <string name="admin_role_user">Пользователь</string>
+    <string name="admin_role_admin">Администратор</string>
+    <string name="admin_status_active">Активен</string>
+    <string name="admin_status_disabled">Отключён</string>
+    <string name="admin_global_role">ГЛОБАЛЬНАЯ РОЛЬ</string>
+    <string name="admin_color">ЦВЕТ ПЛАНОВ</string>
+    <string name="admin_account_active">Аккаунт активен</string>
+    <string name="admin_new_password">Новый пароль · необязательно</string>
+    <string name="admin_delete_user">Удалить пользователя</string>
+    <string name="admin_delete_confirmation">Удалить пользователя?</string>
+    <string name="admin_delete_warning">Аккаунт, его планы и приглашения будут удалены. Это действие нельзя отменить.</string>
+    <string name="admin_error_load">Не удалось загрузить пользователей. Попробуйте ещё раз.</string>
+    <string name="admin_error_save">Не удалось сохранить изменения. Попробуйте ещё раз.</string>
+    <string name="admin_error_access">Управление пользователями доступно только глобальному администратору.</string>
+    <string name="admin_error_not_found">Пользователь не найден</string>
+    <string name="admin_error_last_admin">Нельзя отключить или понизить последнего активного администратора.</string>
+    <string name="admin_error_delete_self">Нельзя удалить собственный аккаунт.</string>
+    <string name="admin_users_empty">Пользователей пока нет</string>
+</resources>

@@ -54,30 +54,26 @@ class MockRepositoriesTest {
         }
 
     @Test
-    fun filtersRespectDatesOwnersAndAlwaysIncludeOwnEvents() =
+    fun boardFiltersSpacesAndMasksPrivatePlans() =
         runBlocking {
             auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
 
-            val events = calendar.getEvents(query(setOf(2, 999))).getOrThrow()
+            val events = calendar.getEvents(query().copy(spaceIds = setOf(1, 999), showOwn = false)).getOrThrow()
 
-            assertEquals(setOf(1, 2), events.map { it.ownerId }.toSet())
-            assertTrue(events.all { it.start.toLocalDate() == today })
+            assertEquals(setOf(1, 2, 3), events.map { it.ownerId }.toSet())
+            assertTrue(events.first { it.id == 3 }.busyOnly)
             assertFalse(events.any { it.ownerId == 999 })
         }
 
     @Test
-    fun visibilityDropsUnavailableIdsAndCanShowOnlyOwnCalendar() =
+    fun boardCanShowOnlyOwnPlansOrNothing() =
         runBlocking {
             auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
-            calendar.setVisibleOwnerIds(setOf(1, 2, 999)).getOrThrow()
-            assertEquals(setOf(2), calendar.getVisibleOwnerIds().getOrThrow())
-
-            calendar.setVisibleOwnerIds(emptySet()).getOrThrow()
-
+            assertTrue(calendar.getEvents(query().copy(spaceIds = emptySet(), showOwn = false)).getOrThrow().isEmpty())
             assertEquals(
                 setOf(1),
                 calendar
-                    .getEvents(query())
+                    .getEvents(query().copy(spaceIds = emptySet(), showOwn = true))
                     .getOrThrow()
                     .map { it.ownerId }
                     .toSet(),

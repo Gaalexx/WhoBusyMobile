@@ -27,9 +27,10 @@ import androidx.compose.ui.unit.dp
 import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.WhoBusyDateCell
 import com.project.whobusy.core.ui.components.WhoBusyEventCard
+import com.project.whobusy.core.ui.components.WhoBusyEventChip
 import com.project.whobusy.core.ui.components.WhoBusyTextButton
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
-import com.project.whobusy.core.ui.theme.calendarColor
+import com.project.whobusy.core.ui.theme.calendarTint
 import com.project.whobusy.presentation.calendar.model.CalendarMode
 import com.project.whobusy.presentation.calendar.model.dayTitle
 import com.project.whobusy.presentation.calendar.model.eventsOnDate
@@ -45,7 +46,7 @@ fun MonthCalendar(
     onEvent: (CalendarCommand) -> Unit,
 ) {
     val month = YearMonth.from(state.selectedDate)
-    val daily = eventsOnDate(state.events, state.selectedDate).sortedBy { it.allDay }
+    val daily = eventsOnDate(state.events, state.selectedDate).sortedByDescending { it.allDay }
     LazyColumn(
         Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background),
         contentPadding =
@@ -70,6 +71,7 @@ fun MonthCalendar(
                 monthDates(month).chunked(7).forEach { week ->
                     Row {
                         week.forEach { date ->
+                            val dayEvents = eventsOnDate(state.events, date)
                             WhoBusyDateCell(
                                 date.dayOfMonth.toString(),
                                 dayTitle(date),
@@ -78,10 +80,14 @@ fun MonthCalendar(
                                 Modifier.weight(1f),
                                 muted = YearMonth.from(date) != month,
                                 eventColors =
-                                    eventsOnDate(state.events, date)
+                                    dayEvents
                                         .map {
-                                            calendarColor(it.displayColor)
+                                            eventColor(it)
                                         }.distinct(),
+                                backgroundColor =
+                                    dayEvents.firstOrNull { it.allDay }?.let {
+                                        calendarTint(eventColor(it))
+                                    } ?: Color.Transparent,
                             )
                         }
                     }
@@ -96,7 +102,7 @@ fun MonthCalendar(
                 color = MaterialTheme.colorScheme.primary,
             )
         }
-        items(daily.take(2), key = { it.id }) { event ->
+        items(daily.take(2), key = { "${it.id}:${it.start}" }) { event ->
             val owner =
                 if (event.ownerId ==
                     state.user?.id
@@ -105,17 +111,24 @@ fun MonthCalendar(
                 } else {
                     event.ownerName.substringBefore(" ")
                 }
-            WhoBusyEventCard(
-                event.title,
-                stringResource(R.string.event_summary, eventTime(event), owner, statusTitle(event.status)),
-                calendarColor(event.displayColor),
-                { onEvent(CalendarCommand.OpenEvent(event)) },
-                Modifier
-                    .padding(horizontal = 16.dp)
-                    .padding(bottom = 12.dp)
-                    .fillMaxWidth()
-                    .height(68.dp),
-            )
+            val modifier = Modifier.padding(horizontal = 16.dp).padding(bottom = 12.dp).fillMaxWidth()
+            if (event.allDay) {
+                WhoBusyEventChip(
+                    stringResource(R.string.event_summary, eventTime(event), owner, event.title),
+                    eventColor(event),
+                    { onEvent(CalendarCommand.OpenEvent(event)) },
+                    modifier,
+                )
+            } else {
+                WhoBusyEventCard(
+                    event.title,
+                    stringResource(R.string.board_time_owner, eventTime(event), owner),
+                    eventColor(event),
+                    { onEvent(CalendarCommand.OpenEvent(event)) },
+                    modifier.height(82.dp),
+                    detail = eventVisibilitySummary(event, state),
+                )
+            }
         }
         if (daily.size > 2) {
             item {

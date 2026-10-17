@@ -69,10 +69,13 @@ fun EventEditorFields(
             WhoBusyValueButton(stringResource(R.string.event_status), statusTitle(state.status), { showStatus = true })
             DropdownMenu(showStatus, { showStatus = false }) {
                 EventStatus.entries.forEach { status ->
-                    DropdownMenuItem(text = { Text(statusTitle(status)) }, onClick = {
-                        showStatus = false
-                        onChange(state.copy(status = status))
-                    })
+                    DropdownMenuItem(
+                        text = { Text(statusTitle(status)) },
+                        onClick = {
+                            showStatus = false
+                            onChange(state.copy(status = status))
+                        }
+                    )
                 }
             }
         }

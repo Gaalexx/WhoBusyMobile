@@ -18,7 +18,7 @@ fun WhoBusyCalendarBadge() {
         Modifier.size(104.dp).background(MaterialTheme.colorScheme.primaryContainer, RoundedCornerShape(28.dp)),
         contentAlignment = Alignment.Center,
     ) {
-        WhoBusyIcon(UiIcon.Calendar, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
+        WhoBusyIcon(UiIcon.CalendarBrand, modifier = Modifier.size(56.dp), tint = MaterialTheme.colorScheme.primary)
     }
 }
 

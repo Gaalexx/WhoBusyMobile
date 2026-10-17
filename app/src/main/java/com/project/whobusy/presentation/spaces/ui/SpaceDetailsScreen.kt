@@ -1,0 +1,214 @@
+package com.project.whobusy.presentation.spaces.ui
+
+import androidx.compose.foundation.layout.Column
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.rememberScrollState
+import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.MaterialTheme
+import androidx.compose.material3.Text
+import androidx.compose.runtime.Composable
+import androidx.compose.ui.Alignment
+import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.res.stringResource
+import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
+import com.project.whobusy.core.ui.components.ButtonStyle
+import com.project.whobusy.core.ui.components.UiIcon
+import com.project.whobusy.core.ui.components.WhoBusyAvatar
+import com.project.whobusy.core.ui.components.WhoBusyButton
+import com.project.whobusy.core.ui.components.WhoBusyEventCard
+import com.project.whobusy.core.ui.components.WhoBusyIconButton
+import com.project.whobusy.core.ui.components.WhoBusyListRow
+import com.project.whobusy.core.ui.components.WhoBusyNotice
+import com.project.whobusy.core.ui.components.WhoBusyScreenLayout
+import com.project.whobusy.core.ui.components.WhoBusySectionTitle
+import com.project.whobusy.core.ui.components.WhoBusyTopBar
+import com.project.whobusy.core.ui.theme.WhoBusyTheme
+import com.project.whobusy.domain.model.CalendarEvent
+import com.project.whobusy.presentation.calendar.model.calendarLocale
+import com.project.whobusy.presentation.calendar.ui.eventColor
+import com.project.whobusy.presentation.calendar.ui.eventTime
+import com.project.whobusy.presentation.spaces.viewmodel.SpacesCommand
+import com.project.whobusy.presentation.spaces.viewmodel.SpacesState
+import java.time.format.DateTimeFormatter
+
+@Composable
+fun SpaceDetailsScreen(
+    state: SpacesState,
+    onEvent: (SpacesCommand) -> Unit,
+    onBack: () -> Unit,
+    onMembers: () -> Unit,
+    onInvite: () -> Unit,
+    onSettings: () -> Unit,
+    onCreateEvent: (Int) -> Unit,
+    onOpenEvent: (CalendarEvent) -> Unit,
+    onLeave: () -> Unit,
+) {
+    val space = state.space
+    WhoBusyScreenLayout(
+        topBar = {
+            WhoBusyTopBar(
+                space?.name ?: stringResource(R.string.spaces_title),
+                onBack,
+                action = {
+                    if (space?.myRole?.canManage == true) {
+                        WhoBusyIconButton(
+                            UiIcon.More,
+                            stringResource(R.string.spaces_settings),
+                            onSettings,
+                            tint = Color.White,
+                        )
+                    }
+                },
+                subtitle =
+                    space
+                        ?.takeUnless {
+                            it.myRole.canManage
+                        }?.let {
+                            stringResource(
+                                R.string.spaces_member_role,
+                                it.memberCount,
+                                spaceRoleTitle(it.myRole)
+                            )
+                        },
+            )
+        }
+    ) {
+        Column(Modifier.fillMaxSize().verticalScroll(rememberScrollState())) {
+            SpacesFeedback(state.isLoading, state.error)
+            if (space != null) {
+                if (space.myRole.canManage && !state.showPlans) {
+                    Column(Modifier.fillMaxWidth(), horizontalAlignment = Alignment.CenterHorizontally) {
+                        Spacer(Modifier.height(24.dp))
+                        WhoBusyAvatar(space.name.take(1), spaceColor(space.id), size = 80.dp)
+                        Spacer(Modifier.height(20.dp))
+                        Text(space.name, style = MaterialTheme.typography.titleLarge)
+                        Text(
+                            stringResource(
+                                R.string.spaces_member_role,
+                                space.memberCount,
+                                spaceRoleTitle(space.myRole),
+                            ),
+                            Modifier.padding(top = 8.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(Modifier.height(32.dp))
+                        WhoBusyButton(
+                            stringResource(R.string.spaces_open_plans),
+                            {
+                                onEvent(SpacesCommand.ShowPlans)
+                            },
+                            Modifier.padding(horizontal = 16.dp)
+                        )
+                        Spacer(Modifier.height(32.dp))
+                    }
+                } else {
+                    WhoBusyNotice(
+                        stringResource(R.string.spaces_access_title),
+                        stringResource(R.string.spaces_access_body),
+                        Modifier.padding(16.dp),
+                    )
+                    val day = state.today
+                    WhoBusySectionTitle(
+                        stringResource(
+                            R.string.spaces_today,
+                            day.format(DateTimeFormatter.ofPattern("d MMMM", calendarLocale)).uppercase(calendarLocale),
+                        ),
+                        Modifier.padding(horizontal = 20.dp, vertical = 12.dp),
+                    )
+                    if (state.events.isEmpty()) {
+                        Text(
+                            stringResource(R.string.spaces_no_plans),
+                            Modifier.padding(20.dp),
+                            color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        )
+                    }
+                    state.events.forEach { event ->
+                        val visibility =
+                            when {
+                                event.busyOnly -> stringResource(R.string.plan_busy_notice)
+                                event.spaceId != null -> stringResource(R.string.plan_visible_everyone, space.name)
+                                else -> stringResource(R.string.plan_visibility_actors)
+                            }
+                        WhoBusyEventCard(
+                            event.title,
+                            stringResource(
+                                R.string.spaces_event_subtitle,
+                                eventTime(event),
+                                event.ownerName,
+                                visibility,
+                            ),
+                            eventColor(event),
+                            {
+                                onOpenEvent(event)
+                            },
+                            Modifier.padding(horizontal = 16.dp, vertical = 8.dp).fillMaxWidth().height(82.dp),
+                        )
+                    }
+                    Spacer(Modifier.height(40.dp))
+                    WhoBusyButton(
+                        stringResource(R.string.spaces_add_plan),
+                        {
+                            onCreateEvent(space.id)
+                        },
+                        Modifier.padding(horizontal = 16.dp)
+                    )
+                    Spacer(Modifier.height(32.dp))
+                }
+                WhoBusyListRow(
+                    stringResource(R.string.spaces_members),
+                    stringResource(
+                        if (space.myRole.canManage) R.string.spaces_members_manage else R.string.spaces_members_view,
+                        space.memberCount,
+                    ),
+                    onMembers,
+                )
+                if (space.myRole.canManage) {
+                    WhoBusyListRow(
+                        stringResource(R.string.spaces_invite),
+                        stringResource(R.string.spaces_invite_hint),
+                        onInvite,
+                    )
+                    WhoBusyListRow(
+                        stringResource(R.string.spaces_settings),
+                        stringResource(R.string.spaces_settings_hint),
+                        onSettings,
+                    )
+                    WhoBusyNotice(
+                        stringResource(R.string.spaces_visibility_title),
+                        stringResource(R.string.spaces_visibility_body),
+                        Modifier.padding(horizontal = 16.dp, vertical = 40.dp),
+                    )
+                } else {
+                    Spacer(Modifier.height(64.dp))
+                    WhoBusyButton(
+                        stringResource(R.string.spaces_leave),
+                        onLeave,
+                        Modifier.padding(horizontal = 16.dp),
+                        style = ButtonStyle.Destructive,
+                    )
+                }
+            }
+            Spacer(Modifier.height(32.dp))
+        }
+    }
+}
+
+@Preview(widthDp = 390, heightDp = 844)
+@Composable
+private fun AdminSpacePreview() {
+    WhoBusyTheme { SpaceDetailsScreen(SpacesPreviewData.state, {}, {}, {}, {}, {}, {}, {}, {}) }
+}
+
+@Preview(widthDp = 390, heightDp = 844)
+@Composable
+private fun VisitorSpacePreview() {
+    WhoBusyTheme { SpaceDetailsScreen(SpacesPreviewData.state.copy(spaceId = 3), {}, {}, {}, {}, {}, {}, {}, {}) }
+}

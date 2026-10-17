@@ -15,4 +15,12 @@ data class CalendarEvent(
     val status: EventStatus,
     val displayColor: String,
     val recurrenceRule: String? = null,
+    val spaceId: Int? = null,
+    val shares: List<EventShare> = emptyList(),
+    val busyOnly: Boolean = false,
+    val canEdit: Boolean = false,
+    val color: String? = null,
+    // Local occurrence metadata; never sent to the backend when a series is edited.
+    val seriesStart: LocalDateTime? = null,
+    val seriesEnd: LocalDateTime? = null,
 )

@@ -1,6 +1,7 @@
 package com.project.whobusy.core.ui.components
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.RowScope
 import androidx.compose.foundation.layout.Spacer
@@ -26,12 +27,13 @@ fun WhoBusyTopBar(
     title: String,
     onBack: (() -> Unit)? = null,
     action: @Composable RowScope.() -> Unit = {},
+    subtitle: String? = null,
 ) {
     Row(
         Modifier
             .fillMaxWidth()
             .background(WhoBusyColors.Header)
-            .height(60.dp)
+            .height(68.dp)
             .padding(end = 8.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
@@ -40,7 +42,12 @@ fun WhoBusyTopBar(
         } else {
             Spacer(Modifier.width(20.dp))
         }
-        Text(title, Modifier.weight(1f), color = Color.White, style = MaterialTheme.typography.titleLarge)
+        Column(Modifier.weight(1f)) {
+            Text(title, color = Color.White, style = MaterialTheme.typography.titleLarge)
+            subtitle?.let {
+                Text(it, color = Color.White, style = MaterialTheme.typography.bodySmall)
+            }
+        }
         action()
     }
 }
@@ -49,8 +56,11 @@ fun WhoBusyTopBar(
 @Composable
 private fun TopBarPreview() {
     WhoBusyTheme {
-        WhoBusyTopBar(stringResource(R.string.ui_calendar), action = {
-            WhoBusyIconButton(UiIcon.More, stringResource(R.string.ui_action_menu), {}, tint = Color.White)
-        })
+        WhoBusyTopBar(
+            stringResource(R.string.ui_calendar),
+            action = {
+                WhoBusyIconButton(UiIcon.More, stringResource(R.string.ui_action_menu), {}, tint = Color.White)
+            }
+        )
     }
 }

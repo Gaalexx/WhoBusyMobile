@@ -5,6 +5,7 @@ import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.imePadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.safeDrawingPadding
@@ -25,6 +26,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.project.whobusy.R
+import com.project.whobusy.core.ui.components.ButtonStyle
 import com.project.whobusy.core.ui.components.WhoBusyButton
 import com.project.whobusy.core.ui.components.WhoBusyCalendarBadge
 import com.project.whobusy.core.ui.components.WhoBusyTextField
@@ -36,6 +38,7 @@ import com.project.whobusy.presentation.login.viewmodel.LoginState
 fun LoginScreen(
     state: LoginState,
     onEvent: (LoginCommand) -> Unit,
+    onRegister: () -> Unit = {},
 ) {
     Column(
         Modifier
@@ -51,13 +54,13 @@ fun LoginScreen(
         WhoBusyCalendarBadge()
         Spacer(Modifier.height(34.dp))
         Text(
-            stringResource(R.string.login_title),
+            stringResource(R.string.app_name),
             style = MaterialTheme.typography.headlineMedium,
             textAlign = TextAlign.Center,
         )
         Spacer(Modifier.height(8.dp))
         Text(
-            stringResource(R.string.login_subtitle),
+            stringResource(R.string.auth_login_subtitle),
             color = MaterialTheme.colorScheme.onSurfaceVariant,
             textAlign = TextAlign.Center,
         )
@@ -65,16 +68,18 @@ fun LoginScreen(
         WhoBusyTextField(
             state.email,
             { onEvent(LoginCommand.EmailChanged(it)) },
-            stringResource(R.string.login_email),
+            stringResource(R.string.auth_identifier),
+            modifier = Modifier.heightIn(min = 64.dp),
             error = state.emailError?.let { stringResource(it) },
             enabled = !state.isLoading,
-            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+            keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
         )
         Spacer(Modifier.height(14.dp))
         WhoBusyTextField(
             state.password,
             { onEvent(LoginCommand.PasswordChanged(it)) },
             stringResource(R.string.login_password),
+            modifier = Modifier.heightIn(min = 64.dp),
             error = state.passwordError?.let { stringResource(it) },
             enabled = !state.isLoading,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
@@ -87,18 +92,25 @@ fun LoginScreen(
                 color = MaterialTheme.colorScheme.error,
             )
         }
-        Spacer(Modifier.height(28.dp))
+        Spacer(Modifier.height(30.dp))
         WhoBusyButton(
             stringResource(R.string.login_submit),
             { onEvent(LoginCommand.Submit) },
             loading = state.isLoading,
         )
-        Spacer(Modifier.height(32.dp))
+        Spacer(Modifier.height(16.dp))
+        WhoBusyButton(
+            stringResource(R.string.auth_create_account),
+            onRegister,
+            style = ButtonStyle.Secondary,
+            enabled = !state.isLoading,
+        )
+        Spacer(Modifier.height(38.dp))
         Text(
-            stringResource(R.string.login_account_help),
+            stringResource(R.string.auth_login_help),
             style = MaterialTheme.typography.bodyMedium,
             color = MaterialTheme.colorScheme.onSurfaceVariant,
-            textAlign = TextAlign.Center,
+            modifier = Modifier.padding(horizontal = 4.dp),
         )
         Spacer(Modifier.height(32.dp))
     }

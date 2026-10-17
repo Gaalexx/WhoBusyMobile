@@ -32,7 +32,6 @@ import com.project.whobusy.core.ui.components.WhoBusyEventCard
 import com.project.whobusy.core.ui.components.WhoBusyEventChip
 import com.project.whobusy.core.ui.theme.WhoBusyColors
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
-import com.project.whobusy.core.ui.theme.calendarColor
 import com.project.whobusy.presentation.calendar.model.eventsOnDate
 import com.project.whobusy.presentation.calendar.model.placeEvents
 import com.project.whobusy.presentation.calendar.preview.CalendarPreviewData
@@ -61,7 +60,7 @@ fun DayCalendar(
             )
             WhoBusyEventChip(
                 stringResource(R.string.event_owner_title, event.ownerName.substringBefore(" "), event.title),
-                calendarColor(event.displayColor),
+                eventColor(event),
                 { onEvent(CalendarCommand.OpenEvent(event)) },
                 Modifier.weight(1f),
             )
@@ -109,13 +108,15 @@ fun DayCalendar(
                     }
                 WhoBusyEventCard(
                     event.title,
-                    stringResource(R.string.event_summary, eventTime(event), owner, statusTitle(event.status)),
-                    calendarColor(event.displayColor),
+                    stringResource(R.string.board_time_owner, eventTime(event), owner),
+                    eventColor(event),
                     { onEvent(CalendarCommand.OpenEvent(event)) },
                     Modifier
                         .offset(x = 64.dp + width * placement.lane, y = hourHeight * (placement.startMinute / 60f))
                         .width(width - 4.dp)
                         .height(height - 2.dp),
+                    detail = if (height >= 64.dp) eventVisibilitySummary(event, state) else null,
+                    compact = height < 82.dp,
                 )
             }
             if (now.toLocalDate() == state.selectedDate) {

@@ -34,12 +34,13 @@ fun WhoBusyEventCard(
     color: Color,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    detail: String? = null,
+    compact: Boolean = false,
 ) {
     Row(modifier.clip(RoundedCornerShape(8.dp)).background(calendarTint(color)).clickable(onClick = onClick)) {
-        Box(Modifier.width(3.dp).fillMaxHeight().background(color))
         Column(
-            Modifier.padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.spacedBy(4.dp),
+            Modifier.padding(horizontal = 10.dp, vertical = if (compact) 2.dp else 8.dp),
+            verticalArrangement = Arrangement.spacedBy(if (compact) 0.dp else 4.dp),
         ) {
             Text(
                 title,
@@ -55,6 +56,9 @@ fun WhoBusyEventCard(
                 maxLines = 2,
                 overflow = TextOverflow.Ellipsis,
             )
+            detail?.let {
+                Text(it, color = color, style = MaterialTheme.typography.bodySmall, maxLines = 1)
+            }
         }
     }
 }
@@ -72,6 +76,22 @@ private fun EventCardPreview() {
             {
             },
             Modifier.fillMaxWidth().height(68.dp),
+        )
+    }
+}
+
+@Preview(name = "Короткий план", showBackground = true)
+@Composable
+private fun CompactEventCardPreview() {
+    WhoBusyTheme {
+        WhoBusyEventCard(
+            "Обсуждение релиза",
+            stringResource(R.string.ui_preview_event_subtitle),
+            WhoBusyColors.Primary,
+            {},
+            Modifier.fillMaxWidth().height(62.dp),
+            detail = "Momentum",
+            compact = true,
         )
     }
 }

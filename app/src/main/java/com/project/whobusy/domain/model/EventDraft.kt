@@ -10,6 +10,10 @@ data class EventDraft(
     val location: String = "",
     val allDay: Boolean = false,
     val status: EventStatus = EventStatus.BUSY,
+    val spaceId: Int? = null,
+    val shares: List<EventShare> = emptyList(),
+    val recurrenceRule: String? = null,
+    val color: String? = null,
 ) {
     init {
         require(title.isNotBlank())

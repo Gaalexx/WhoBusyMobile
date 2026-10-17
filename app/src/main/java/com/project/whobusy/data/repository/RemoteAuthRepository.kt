@@ -12,34 +12,34 @@ import java.util.Locale
 import javax.inject.Inject
 
 class RemoteAuthRepository
-    @Inject
-    constructor(
-        private val api: AuthAPI,
-        private val sessionStore: SessionStore,
-    ) : AuthRepository {
-        override val currentUser = sessionStore.currentUser
+@Inject
+constructor(
+    private val api: AuthAPI,
+    private val sessionStore: SessionStore,
+) : AuthRepository {
+    override val currentUser = sessionStore.currentUser
 
-        override suspend fun login(
-            email: String,
-            password: String,
-        ): Result<CalendarUser> =
-            repositoryResult {
-                val request = LoginRequestDTO(email.trim().lowercase(Locale.ROOT), password)
-                val token =
-                    try {
-                        api.login(request)
-                    } catch (exception: ClientRequestException) {
-                        if (exception.response.status == HttpStatusCode.Unauthorized) {
-                            throw InvalidCredentialsException()
-                        }
-                        throw exception
+    override suspend fun login(
+        email: String,
+        password: String,
+    ): Result<CalendarUser> =
+        repositoryResult {
+            val request = LoginRequestDTO(email.trim().lowercase(Locale.ROOT), password)
+            val token =
+                try {
+                    api.login(request)
+                } catch (exception: ClientRequestException) {
+                    if (exception.response.status == HttpStatusCode.Unauthorized) {
+                        throw InvalidCredentialsException()
                     }
-                require(token.tokenType.equals("bearer", ignoreCase = true))
-                require(token.accessToken.isNotBlank())
-                val user = api.getCurrentUser(token.accessToken).toDomain()
-                sessionStore.save(token.accessToken, user)
-                user
-            }
+                    throw exception
+                }
+            require(token.tokenType.equals("bearer", ignoreCase = true))
+            require(token.accessToken.isNotBlank())
+            val user = api.getCurrentUser(token.accessToken).toDomain()
+            sessionStore.save(token.accessToken, user)
+            user
+        }
 
-        override fun logout() = sessionStore.clear()
-    }
+    override fun logout() = sessionStore.clear()
+}

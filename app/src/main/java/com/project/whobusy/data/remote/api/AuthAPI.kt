@@ -15,21 +15,21 @@ import io.ktor.http.contentType
 import javax.inject.Inject
 
 class AuthAPI
-    @Inject
-    constructor(
-        private val client: HttpClient,
-        private val configuration: ApiConfiguration,
-    ) {
-        suspend fun login(request: LoginRequestDTO): TokenDTO =
-            client
-                .post(configuration.endpoint("auth/login")) {
-                    contentType(ContentType.Application.Json)
-                    setBody(request)
-                }.body()
+@Inject
+constructor(
+    private val client: HttpClient,
+    private val configuration: ApiConfiguration,
+) {
+    suspend fun login(request: LoginRequestDTO): TokenDTO =
+        client
+            .post(configuration.endpoint("auth/login")) {
+                contentType(ContentType.Application.Json)
+                setBody(request)
+            }.body()
 
-        suspend fun getCurrentUser(token: String): UserDTO =
-            client
-                .get(configuration.endpoint("auth/me")) {
-                    bearerAuth(token)
-                }.body()
-    }
+    suspend fun getCurrentUser(token: String): UserDTO =
+        client
+            .get(configuration.endpoint("auth/me")) {
+                bearerAuth(token)
+            }.body()
+}

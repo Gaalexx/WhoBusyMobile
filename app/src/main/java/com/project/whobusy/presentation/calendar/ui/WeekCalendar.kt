@@ -35,7 +35,6 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import com.project.whobusy.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
-import com.project.whobusy.core.ui.theme.calendarColor
 import com.project.whobusy.presentation.calendar.model.CalendarMode
 import com.project.whobusy.presentation.calendar.model.placeEvents
 import com.project.whobusy.presentation.calendar.model.weekStart
@@ -55,12 +54,6 @@ fun WeekCalendar(
     LaunchedEffect(start) { scroll.scrollTo(with(density) { (56.dp * 9).roundToPx() }) }
     Column(Modifier.fillMaxSize()) {
         WeekAllDayEvents(state, onEvent)
-        Text(
-            stringResource(R.string.calendar_week_hint, start.dayOfMonth, start.plusDays(6).dayOfMonth),
-            Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
         BoxWithConstraints(Modifier.weight(1f).fillMaxWidth().verticalScroll(scroll)) {
             val dayWidth = (maxWidth - 34.dp) / 7
             Box(
@@ -109,7 +102,8 @@ fun WeekCalendar(
                                             2.dp,
                                     ).clip(
                                         RoundedCornerShape(5.dp),
-                                    ).background(calendarColor(event.displayColor))
+                                    ).background(eventColor(event))
+                                    .clickable { onEvent(CalendarCommand.OpenEvent(event)) }
                                     .padding(3.dp),
                             ) {
                                 Text(

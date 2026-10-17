@@ -36,13 +36,14 @@ fun WhoBusyDateCell(
     weekday: String? = null,
     muted: Boolean = false,
     eventColors: List<Color> = emptyList(),
+    backgroundColor: Color = Color.Transparent,
 ) {
     val colors = MaterialTheme.colorScheme
     Column(
         modifier
             .height(if (weekday == null) 48.dp else 52.dp)
             .clip(RoundedCornerShape(10.dp))
-            .background(if (selected && weekday != null) colors.primary else Color.Transparent)
+            .background(if (selected && weekday != null) colors.primary else backgroundColor)
             .semantics { contentDescription = description }
             .selectable(selected, role = Role.Button, onClick = onClick),
         horizontalAlignment = Alignment.CenterHorizontally,

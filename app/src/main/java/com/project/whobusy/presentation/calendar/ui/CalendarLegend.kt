@@ -51,11 +51,6 @@ fun CalendarLegend(state: CalendarState) {
                 style = MaterialTheme.typography.bodySmall,
             )
         }
-        Text(
-            stringResource(R.string.calendar_visible_count, visible.size),
-            style = MaterialTheme.typography.bodySmall,
-            color = MaterialTheme.colorScheme.onSurfaceVariant,
-        )
     }
 }
 

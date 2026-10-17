@@ -14,61 +14,55 @@ import javax.inject.Inject
 
 @HiltViewModel
 class LoginViewModel
-    @Inject
-    constructor(
-        private val repository: AuthRepository,
-        defaults: LoginDefaults,
-    ) : ViewModel() {
-        private val _state = MutableStateFlow(LoginState(defaults.email, defaults.password))
-        val state = _state.asStateFlow()
+@Inject
+constructor(
+    private val repository: AuthRepository,
+    defaults: LoginDefaults,
+) : ViewModel() {
+    private val _state = MutableStateFlow(LoginState(defaults.email, defaults.password))
+    val state = _state.asStateFlow()
 
-        fun onEvent(command: LoginCommand) {
-            if (_state.value.isLoading) return
-            when (command) {
-                is LoginCommand.EmailChanged ->
-                    _state.update {
-                        it.copy(email = command.value, emailError = null, error = null)
-                    }
-                is LoginCommand.PasswordChanged ->
-                    _state.update {
-                        it.copy(password = command.value, passwordError = null, error = null)
-                    }
-                LoginCommand.Submit -> login()
-            }
-        }
-
-        private fun login() {
-            val current = _state.value
-            val emailError =
-                if (Regex(
-                        "^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$",
-                    ).matches(current.email.trim())
-                ) {
-                    null
-                } else {
-                    R.string.error_login_email
+    fun onEvent(command: LoginCommand) {
+        if (_state.value.isLoading) return
+        when (command) {
+            is LoginCommand.EmailChanged ->
+                _state.update {
+                    it.copy(email = command.value, emailError = null, error = null)
                 }
-            val passwordError = if (current.password.isBlank()) R.string.error_login_password else null
-            _state.update { it.copy(emailError = emailError, passwordError = passwordError, error = null) }
-            if (emailError != null || passwordError != null) return
-            _state.update { it.copy(isLoading = true) }
-            viewModelScope.launch {
-                repository
-                    .login(current.email, current.password)
-                    .onSuccess { _state.update { it.copy(isLoading = false, password = "") } }
-                    .onFailure { error ->
-                        _state.update {
-                            it.copy(
-                                isLoading = false,
-                                error =
-                                    if (error is InvalidCredentialsException) {
-                                        R.string.error_login_credentials
-                                    } else {
-                                        R.string.error_login_connection
-                                    },
-                            )
-                        }
-                    }
-            }
+
+            is LoginCommand.PasswordChanged ->
+                _state.update {
+                    it.copy(password = command.value, passwordError = null, error = null)
+                }
+
+            LoginCommand.Submit -> login()
         }
     }
+
+    private fun login() {
+        val current = _state.value
+        val emailError = if (current.email.isBlank()) R.string.auth_error_identifier else null
+        val passwordError = if (current.password.isEmpty()) R.string.error_login_password else null
+        _state.update { it.copy(emailError = emailError, passwordError = passwordError, error = null) }
+        if (emailError != null || passwordError != null) return
+        _state.update { it.copy(isLoading = true) }
+        viewModelScope.launch {
+            repository
+                .login(current.email, current.password)
+                .onSuccess { _state.update { it.copy(isLoading = false, password = "") } }
+                .onFailure { error ->
+                    _state.update {
+                        it.copy(
+                            isLoading = false,
+                            error =
+                                if (error is InvalidCredentialsException) {
+                                    R.string.error_login_credentials
+                                } else {
+                                    R.string.error_login_connection
+                                },
+                        )
+                    }
+                }
+        }
+    }
+}

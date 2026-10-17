@@ -10,9 +10,9 @@ import javax.inject.Inject
 
 @HiltViewModel
 class AppViewModel
-    @Inject
-    constructor(
-        auth: AuthRepository,
-    ) : ViewModel() {
-        val user = auth.currentUser.stateIn(viewModelScope, SharingStarted.Eagerly, null)
-    }
+@Inject
+constructor(
+    auth: AuthRepository,
+) : ViewModel() {
+    val user = auth.currentUser.stateIn(viewModelScope, SharingStarted.Eagerly, null)
+}

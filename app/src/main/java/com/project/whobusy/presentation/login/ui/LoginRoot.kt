@@ -6,6 +6,9 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.project.whobusy.presentation.login.viewmodel.LoginViewModel
 
 @Composable
-fun LoginRoot(viewModel: LoginViewModel = hiltViewModel()) {
-    LoginScreen(viewModel.state.collectAsStateWithLifecycle().value, viewModel::onEvent)
+fun LoginRoot(
+    onRegister: () -> Unit,
+    viewModel: LoginViewModel = hiltViewModel(),
+) {
+    LoginScreen(viewModel.state.collectAsStateWithLifecycle().value, viewModel::onEvent, onRegister)
 }

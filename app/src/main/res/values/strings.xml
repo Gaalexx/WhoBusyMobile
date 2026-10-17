@@ -7,12 +7,12 @@
     <string name="app_version">Версия %1$s</string>
     <string name="favorites_placeholder">Здесь появится избранное</string>
     <string name="profile_placeholder">Здесь появится ваш профиль</string>
-    <string name="screen_calendar">Календарь</string>
-    <string name="screen_calendars">Календари</string>
+    <string name="screen_calendar">Доска</string>
+    <string name="screen_calendars">Пространства</string>
     <string name="screen_profile">Профиль</string>
     <string name="action_cancel">Отмена</string>
     <string name="action_select">Выбрать</string>
-    <string name="action_create_event">Создать событие</string>
+    <string name="action_create_event">Создать план</string>
     <string name="action_retry">Повторить</string>
     <string name="action_today">Сегодня</string>
     <string name="action_refresh">Обновить</string>
@@ -32,7 +32,7 @@
     <string name="error_calendar_load">Не удалось загрузить календарь. Проверьте подключение.</string>
     <string name="error_login_email">Введите корректный email</string>
     <string name="error_login_password">Введите пароль</string>
-    <string name="error_login_credentials">Неверный email или пароль</string>
+    <string name="error_login_credentials">Неверный логин, email или пароль</string>
     <string name="error_login_connection">Не удалось войти. Проверьте подключение и попробуйте снова.</string>
     <string name="login_title">Календарь занятости</string>
     <string name="login_subtitle">Планы команды в одном месте</string>
@@ -42,9 +42,9 @@
     <string name="login_account_help">Нет аккаунта или забыли пароль?\nОбратитесь к администратору.</string>
     <string name="calendar_loading">Загружаем календарь…</string>
     <string name="calendar_menu">Меню календаря</string>
-    <string name="calendar_empty_title">Пока никаких событий</string>
-    <string name="calendar_empty_description">Добавьте свои планы или включите\nдоступные календари коллег.</string>
-    <string name="calendar_select_calendars">Выбрать календари</string>
+    <string name="calendar_empty_title">Пока никаких планов</string>
+    <string name="calendar_empty_description">Добавьте личный план или включите\nнужные пространства в настройках доски.</string>
+    <string name="calendar_select_calendars">Настроить доску</string>
     <string name="calendar_no_events_on_date">На этот день событий нет</string>
     <string name="calendar_more_events">Ещё событий: %1$d</string>
     <string name="calendar_visible_count">Календари: %1$d</string>

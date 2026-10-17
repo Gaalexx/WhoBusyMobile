@@ -86,14 +86,19 @@ fun CalendarHeader(
         DatePickerDialog(
             onDismissRequest = { showPicker = false },
             confirmButton = {
-                WhoBusyTextButton(stringResource(R.string.action_select), {
-                    picker.selectedDateMillis?.let {
-                        onEvent(
-                            CalendarCommand.SelectDate(Instant.ofEpochMilli(it).atOffset(ZoneOffset.UTC).toLocalDate()),
-                        )
+                WhoBusyTextButton(
+                    stringResource(R.string.action_select),
+                    {
+                        picker.selectedDateMillis?.let {
+                            onEvent(
+                                CalendarCommand.SelectDate(
+                                    Instant.ofEpochMilli(it).atOffset(ZoneOffset.UTC).toLocalDate()
+                                ),
+                            )
+                        }
+                        showPicker = false
                     }
-                    showPicker = false
-                })
+                )
             },
             dismissButton = { WhoBusyTextButton(stringResource(R.string.action_cancel), { showPicker = false }) },
         ) { DatePicker(picker) }

@@ -1,5 +1,6 @@
 package com.project.whobusy.presentation.calendar.ui
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.fillMaxSize
@@ -8,6 +9,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
@@ -29,24 +31,26 @@ fun CalendarScreen(
 ) {
     val isEmptyDay = state.mode == CalendarMode.Day && eventsOnDate(state.events, state.selectedDate).isEmpty()
     val canCreateEvent = !state.isLoading && state.error == null && !isEmptyDay
-    WhoBusyScreenLayout(topBar = { CalendarToolbar(onEvent) }) {
+    WhoBusyScreenLayout(topBar = { CalendarToolbar(state, onEvent) }) {
         Box(Modifier.fillMaxSize().testTag("calendar-content")) {
-            Column(Modifier.fillMaxSize()) {
+            Column(Modifier.fillMaxSize().background(Color.White)) {
                 CalendarHeader(state, onEvent)
                 when {
                     state.isLoading || state.error != null ->
                         CalendarLoadingError(state.error) {
                             onEvent(CalendarCommand.Refresh)
                         }
+
                     state.mode == CalendarMode.Month -> MonthCalendar(state, onEvent)
                     isEmptyDay ->
                         EmptyCalendar(
                             { onEvent(CalendarCommand.CreateEvent) },
                             { onEvent(CalendarCommand.OpenCalendars) },
                         )
+
                     else -> {
-                        CalendarLegend(state)
                         if (state.mode == CalendarMode.Day) {
+                            CalendarLegend(state)
                             DayCalendar(state, onEvent, now)
                         } else {
                             WeekCalendar(state, onEvent)

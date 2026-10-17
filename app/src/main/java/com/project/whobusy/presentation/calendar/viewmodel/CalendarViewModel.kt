@@ -39,6 +39,8 @@ constructor(
         )
     val state = _state.asStateFlow()
     private var loadJob: Job? = null
+    private var pendingLoad: PendingLoad? = null
+    private var loadVersion = 0L
     private val openedEvents = mutableMapOf<Pair<Int, String>, CalendarEvent>()
 
     fun rememberEvent(event: CalendarEvent) {
@@ -75,10 +77,10 @@ constructor(
 
             is CalendarCommand.MovePeriod ->
                 selectDate(
-                    if (_state.value.mode == CalendarMode.Month) {
-                        _state.value.selectedDate.plusMonths(command.offset)
-                    } else {
-                        _state.value.selectedDate.plusWeeks(command.offset)
+                    when (_state.value.mode) {
+                        CalendarMode.Day -> _state.value.selectedDate.plusDays(command.offset)
+                        CalendarMode.Week -> _state.value.selectedDate.plusWeeks(command.offset)
+                        CalendarMode.Month -> _state.value.selectedDate.plusMonths(command.offset)
                     },
                 )
 
@@ -107,7 +109,17 @@ constructor(
     private fun selectDate(date: LocalDate) {
         savedState["date"] = date.toString()
         _state.update { it.copy(selectedDate = date) }
-        reload()
+        if (_state.value.isSaving || pendingLoad?.range?.coversMonth(date) == true) return
+        val current = _state.value
+        val loadedRange = current.loadedStart?.let { start ->
+            current.loadedEndExclusive?.let { end -> CalendarLoadRange(start, end) }
+        }
+        if (loadedRange?.coversMonth(date) == true && pendingLoad?.force != true) {
+            cancelLoad()
+            _state.update { it.copy(isLoading = false, error = null) }
+            return
+        }
+        reload(force = pendingLoad?.force == true)
     }
 
     private fun toggleOwner(id: Int) {
@@ -123,7 +135,7 @@ constructor(
         block: suspend () -> Unit,
     ) {
         if (_state.value.isSaving || _state.value.result != null) return
-        loadJob?.cancel()
+        cancelLoad()
         _state.update { it.copy(isSaving = true, error = null) }
         viewModelScope.launch {
             try {
@@ -144,23 +156,52 @@ constructor(
         }
     }
 
-    private fun reload() {
+    private fun reload(force: Boolean = true) {
+        if (_state.value.isSaving) return
         openedEvents.clear()
-        loadJob?.cancel()
+        cancelLoad()
         val date = _state.value.selectedDate
+        val version = loadVersion
+        pendingLoad = PendingLoad(calendarLoadRange(date), force)
+        _state.update { it.copy(isLoading = true, error = null) }
         loadJob =
             viewModelScope.launch {
-                _state.update { it.copy(isLoading = true, error = null) }
                 try {
                     val loaded = loader.load(date)
-                    _state.update { loaded.copy(mode = it.mode, result = it.result) }
+                    if (version != loadVersion) return@launch
+                    _state.update {
+                        loaded.copy(
+                            selectedDate = it.selectedDate,
+                            mode = it.mode,
+                            isSaving = it.isSaving,
+                            result = it.result,
+                        )
+                    }
                 } catch (exception: CancellationException) {
                     throw exception
                 } catch (exception: Exception) {
+                    if (version != loadVersion) return@launch
                     _state.update {
                         it.copy(isLoading = false, error = R.string.error_calendar_load)
+                    }
+                } finally {
+                    if (version == loadVersion) {
+                        pendingLoad = null
+                        loadJob = null
                     }
                 }
             }
     }
+
+    private fun cancelLoad() {
+        loadVersion++
+        loadJob?.cancel()
+        loadJob = null
+        pendingLoad = null
+    }
+
+    private data class PendingLoad(
+        val range: CalendarLoadRange,
+        val force: Boolean,
+    )
 }

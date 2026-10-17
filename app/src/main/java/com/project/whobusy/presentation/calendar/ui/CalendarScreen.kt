@@ -35,28 +35,13 @@ fun CalendarScreen(
         Box(Modifier.fillMaxSize().testTag("calendar-content")) {
             Column(Modifier.fillMaxSize().background(Color.White)) {
                 CalendarHeader(state, onEvent)
-                when {
-                    state.isLoading || state.error != null ->
-                        CalendarLoadingError(state.error) {
-                            onEvent(CalendarCommand.Refresh)
-                        }
-
-                    state.mode == CalendarMode.Month -> MonthCalendar(state, onEvent)
-                    isEmptyDay ->
-                        EmptyCalendar(
-                            { onEvent(CalendarCommand.CreateEvent) },
-                            { onEvent(CalendarCommand.OpenCalendars) },
-                        )
-
-                    else -> {
-                        if (state.mode == CalendarMode.Day) {
-                            CalendarLegend(state)
-                            DayCalendar(state, onEvent, now)
-                        } else {
-                            WeekCalendar(state, onEvent)
-                        }
+                if (state.mode == CalendarMode.Day) {
+                    CalendarWeekStripPager(state.selectedDate) { onEvent(CalendarCommand.SelectDate(it)) }
+                    if (!state.isLoading && state.error == null && !isEmptyDay) {
+                        CalendarLegend(state)
                     }
                 }
+                CalendarContentPager(state, onEvent, now, Modifier.weight(1f))
             }
             if (canCreateEvent) {
                 WhoBusyAddButton(

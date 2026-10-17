@@ -26,13 +26,13 @@ constructor(
 ) {
     suspend fun load(date: LocalDate): CalendarState {
         val user = auth.currentUser.first()
-        val dates = monthDates(YearMonth.from(date))
+        val range = calendarLoadRange(date)
         val spaces = workspace?.getSpaces()?.getOrThrow().orEmpty()
         val board = workspace?.getBoardSettings()?.getOrThrow() ?: BoardSettings(emptySet())
         val events =
             repository
                 .getEvents(
-                    CalendarQuery(dates.first().atStartOfDay(), dates.last().plusDays(1).atStartOfDay()),
+                    CalendarQuery(range.start.atStartOfDay(), range.endExclusive.atStartOfDay()),
                 ).getOrThrow()
         val users =
             (
@@ -47,16 +47,16 @@ constructor(
                 events.none { it.recurrenceRule != null } ->
                     expandRecurringEvents(
                         events,
-                        dates.first().atStartOfDay(),
-                        dates.last().plusDays(1).atStartOfDay(),
+                        range.start.atStartOfDay(),
+                        range.endExclusive.atStartOfDay(),
                     )
 
                 else ->
                     withContext(Dispatchers.Default) {
                         expandRecurringEvents(
                             events,
-                            dates.first().atStartOfDay(),
-                            dates.last().plusDays(1).atStartOfDay(),
+                            range.start.atStartOfDay(),
+                            range.endExclusive.atStartOfDay(),
                             checkCancellation = { ensureActive() },
                         )
                     }
@@ -71,7 +71,27 @@ constructor(
             boardSettings = board,
             series = events,
             events = expanded,
+            loadedStart = range.start,
+            loadedEndExclusive = range.endExclusive,
             isLoading = false,
         )
     }
+}
+
+internal data class CalendarLoadRange(
+    val start: LocalDate,
+    val endExclusive: LocalDate,
+) {
+    fun coversMonth(date: LocalDate): Boolean {
+        val dates = monthDates(YearMonth.from(date))
+        return dates.first() >= start && dates.last() < endExclusive
+    }
+}
+
+internal fun calendarLoadRange(date: LocalDate): CalendarLoadRange {
+    val month = YearMonth.from(date)
+    return CalendarLoadRange(
+        start = monthDates(month.minusMonths(1)).first(),
+        endExclusive = monthDates(month.plusMonths(1)).last().plusDays(1),
+    )
 }

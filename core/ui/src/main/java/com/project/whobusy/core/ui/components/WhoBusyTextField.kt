@@ -1,5 +1,6 @@
 package com.project.whobusy.core.ui.components
 
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -25,6 +26,8 @@ import androidx.compose.ui.unit.dp
 import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
+enum class TextFieldStyle { Plain, Filled }
+
 @Composable
 fun WhoBusyTextField(
     value: String,
@@ -37,7 +40,9 @@ fun WhoBusyTextField(
     keyboardOptions: KeyboardOptions = KeyboardOptions.Default,
     visualTransformation: VisualTransformation = VisualTransformation.None,
     placeholder: String? = null,
+    style: TextFieldStyle = TextFieldStyle.Plain,
 ) {
+    val filled = style == TextFieldStyle.Filled
     Column(modifier.fillMaxWidth()) {
         BasicTextField(
             value = value,
@@ -54,7 +59,16 @@ fun WhoBusyTextField(
             textStyle = MaterialTheme.typography.bodyLarge.copy(color = MaterialTheme.colorScheme.onSurface),
             cursorBrush = SolidColor(MaterialTheme.colorScheme.primary),
             decorationBox = { innerTextField ->
-                Surface(shape = RoundedCornerShape(12.dp), color = MaterialTheme.colorScheme.surface) {
+                Surface(
+                    shape = RoundedCornerShape(12.dp),
+                    color = if (filled) MaterialTheme.colorScheme.primaryContainer else MaterialTheme.colorScheme.surface,
+                    border = if (filled) {
+                        BorderStroke(
+                            1.dp,
+                            if (error == null) MaterialTheme.colorScheme.primary else MaterialTheme.colorScheme.error
+                        )
+                    } else null,
+                ) {
                     Column(
                         Modifier.heightIn(min = 64.dp).padding(horizontal = 12.dp, vertical = 10.dp),
                         verticalArrangement = Arrangement.spacedBy(2.dp),
@@ -62,21 +76,20 @@ fun WhoBusyTextField(
                         Text(
                             label,
                             style = MaterialTheme.typography.bodySmall,
-                            color =
-                                if (error ==
-                                    null
-                                ) {
-                                    MaterialTheme.colorScheme.primary
-                                } else {
-                                    MaterialTheme.colorScheme.error
-                                },
+                            color = when {
+                                error != null -> MaterialTheme.colorScheme.error
+                                filled -> MaterialTheme.colorScheme.onSurface
+                                else -> MaterialTheme.colorScheme.primary
+                            },
                         )
                         Box {
                             if (value.isEmpty() && placeholder != null) {
                                 Text(
                                     placeholder,
                                     style = MaterialTheme.typography.bodyLarge,
-                                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                                    color = if (filled) {
+                                        MaterialTheme.colorScheme.onSurface.copy(alpha = 0.75f)
+                                    } else MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             }
                             innerTextField()
@@ -91,6 +104,41 @@ fun WhoBusyTextField(
                 Modifier.padding(start = 12.dp, top = 4.dp),
                 style = MaterialTheme.typography.bodySmall,
                 color = MaterialTheme.colorScheme.error,
+            )
+        }
+    }
+}
+
+@Preview(name = "Поля на экране входа", showBackground = true, backgroundColor = 0xFFFFFFFF)
+@Composable
+private fun AuthTextFieldsPreview() {
+    WhoBusyTheme {
+        Column(verticalArrangement = Arrangement.spacedBy(12.dp), modifier = Modifier.padding(16.dp)) {
+            WhoBusyTextField(
+                "",
+                {},
+                stringResource(R.string.ui_email),
+                style = TextFieldStyle.Filled,
+            )
+            WhoBusyTextField(
+                "alex@example.com",
+                {},
+                stringResource(R.string.ui_email),
+                style = TextFieldStyle.Filled,
+            )
+            WhoBusyTextField(
+                "alex",
+                {},
+                stringResource(R.string.ui_email),
+                error = stringResource(R.string.ui_error_email_invalid),
+                style = TextFieldStyle.Filled,
+            )
+            WhoBusyTextField(
+                "alex@example.com",
+                {},
+                stringResource(R.string.ui_email),
+                enabled = false,
+                style = TextFieldStyle.Filled,
             )
         }
     }

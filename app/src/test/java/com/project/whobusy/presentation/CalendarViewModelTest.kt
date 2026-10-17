@@ -9,6 +9,7 @@ import com.project.whobusy.domain.model.EventDraft
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.CalendarRepository
 import com.project.whobusy.presentation.calendar.model.CalendarMode
+import com.project.whobusy.presentation.calendar.model.monthDates
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarEffect
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarLoader
@@ -16,6 +17,7 @@ import com.project.whobusy.presentation.calendar.viewmodel.CalendarViewModel
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
+import kotlinx.coroutines.NonCancellable
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.test.StandardTestDispatcher
@@ -24,6 +26,7 @@ import kotlinx.coroutines.test.resetMain
 import kotlinx.coroutines.test.runCurrent
 import kotlinx.coroutines.test.runTest
 import kotlinx.coroutines.test.setMain
+import kotlinx.coroutines.withContext
 import org.junit.After
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertFalse
@@ -35,6 +38,7 @@ import org.junit.Test
 import java.time.Clock
 import java.time.Instant
 import java.time.LocalDate
+import java.time.YearMonth
 import java.time.ZoneOffset
 
 @OptIn(ExperimentalCoroutinesApi::class)
@@ -230,6 +234,193 @@ class CalendarViewModelTest {
             assertEquals(CalendarMode.Month, restored.state.value.mode)
         }
 
+    @Test
+    fun datesInTheThreeCoveredMonthsReuseTheLoadedWindowWithoutLoading() =
+        runTest {
+            val repository = FakeCalendarRepository()
+            val viewModel = createViewModel(repository)
+            advanceUntilIdle()
+
+            listOf("2026-09-01", "2026-10-31", "2026-11-30").forEach { value ->
+                val date = LocalDate.parse(value)
+                viewModel.onEvent(CalendarCommand.SelectDate(date))
+                assertEquals(date, viewModel.state.value.selectedDate)
+                assertFalse(viewModel.state.value.isLoading)
+                advanceUntilIdle()
+            }
+
+            assertEquals(1, repository.eventLoadCount)
+            assertEquals(LocalDate.parse("2026-08-31"), viewModel.state.value.loadedStart)
+            assertEquals(LocalDate.parse("2026-12-07"), viewModel.state.value.loadedEndExclusive)
+        }
+
+    @Test
+    fun aSpilloverDayLoadsTheFullSelectedMonthInsteadOfTreatingMissingEventsAsEmpty() =
+        runTest {
+            val repository = FakeCalendarRepository()
+            val viewModel = createViewModel(repository)
+            advanceUntilIdle()
+            val date = LocalDate.parse("2026-12-01")
+            assertTrue(date < requireNotNull(viewModel.state.value.loadedEndExclusive))
+
+            viewModel.onEvent(CalendarCommand.SelectDate(date))
+            assertTrue(viewModel.state.value.isLoading)
+            advanceUntilIdle()
+
+            assertEquals(2, repository.eventLoadCount)
+            assertEquals(date, viewModel.state.value.selectedDate)
+            val month = monthDates(YearMonth.from(date))
+            assertTrue(month.first() >= requireNotNull(viewModel.state.value.loadedStart))
+            assertTrue(month.last() < requireNotNull(viewModel.state.value.loadedEndExclusive))
+        }
+
+    @Test
+    fun selectingInsideAnInFlightWindowPreservesTheLatestDateAndModeWithoutAnotherRequest() =
+        runTest {
+            val gate = CompletableDeferred<Unit>()
+            val repository = FakeCalendarRepository().apply { pendingLoad = gate }
+            val savedState = SavedStateHandle()
+            val viewModel = createViewModel(repository, savedState)
+            runCurrent()
+            val latest = LocalDate.parse("2026-11-20")
+
+            viewModel.onEvent(CalendarCommand.SelectDate(LocalDate.parse("2026-09-10")))
+            viewModel.onEvent(CalendarCommand.SelectDate(latest))
+            viewModel.onEvent(CalendarCommand.SelectMode(CalendarMode.Week))
+            runCurrent()
+            assertEquals(1, repository.eventLoadCount)
+            assertTrue(viewModel.state.value.isLoading)
+
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(latest, viewModel.state.value.selectedDate)
+            assertEquals(CalendarMode.Week, viewModel.state.value.mode)
+            assertEquals(latest.toString(), savedState.get<String>("date"))
+            assertFalse(viewModel.state.value.isLoading)
+            assertEquals(1, repository.eventLoadCount)
+        }
+
+    @Test
+    fun aCancelledOldRequestCannotReplaceTheLatestWindowEvenIfItReturnsSuccessfully() =
+        runTest {
+            val oldGate = CompletableDeferred<Unit>()
+            val repository = FakeCalendarRepository().apply {
+                loadEvents = { query ->
+                    if (query.start.toLocalDate() == LocalDate.parse("2026-08-31")) {
+                        withContext(NonCancellable) { oldGate.await() }
+                    }
+                    listOf(draft.toEvent(query.start.monthValue))
+                }
+            }
+            val viewModel = createViewModel(repository)
+            runCurrent()
+            val latest = LocalDate.parse("2027-04-15")
+
+            viewModel.onEvent(CalendarCommand.SelectDate(latest))
+            runCurrent()
+            val latestState = viewModel.state.value
+            assertFalse(latestState.isLoading)
+            assertEquals(latest, latestState.selectedDate)
+            assertEquals(LocalDate.parse("2027-03-01"), latestState.loadedStart)
+
+            oldGate.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(latestState, viewModel.state.value)
+            assertEquals(2, repository.eventLoadCount)
+        }
+
+    @Test
+    fun returningToTheLoadedWindowCancelsAnUnneededNavigationLoadWithoutReloading() =
+        runTest {
+            val repository = FakeCalendarRepository()
+            val viewModel = createViewModel(repository)
+            advanceUntilIdle()
+            val gate = CompletableDeferred<Unit>()
+            repository.pendingLoad = gate
+            viewModel.onEvent(CalendarCommand.SelectDate(LocalDate.parse("2027-04-15")))
+            runCurrent()
+            assertEquals(2, repository.eventLoadCount)
+
+            viewModel.onEvent(CalendarCommand.SelectDate(LocalDate.parse("2026-10-18")))
+            assertFalse(viewModel.state.value.isLoading)
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(2, repository.eventLoadCount)
+            assertEquals(LocalDate.parse("2026-08-31"), viewModel.state.value.loadedStart)
+            assertEquals(LocalDate.parse("2026-10-18"), viewModel.state.value.selectedDate)
+        }
+
+    @Test
+    fun explicitRefreshReplacesCachedDataAndIsNotCancelledBySelectingAnotherCoveredDate() =
+        runTest {
+            val repository = FakeCalendarRepository().apply { loadEvents = { listOf(draft.toEvent(1)) } }
+            val viewModel = createViewModel(repository)
+            advanceUntilIdle()
+            val gate = CompletableDeferred<Unit>()
+            repository.pendingLoad = gate
+            repository.loadEvents = { listOf(draft.copy(title = "Обновлено").toEvent(1)) }
+
+            viewModel.onEvent(CalendarCommand.Refresh)
+            runCurrent()
+            viewModel.onEvent(CalendarCommand.SelectDate(LocalDate.parse("2026-11-20")))
+            assertTrue(viewModel.state.value.isLoading)
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(2, repository.eventLoadCount)
+            assertEquals("Обновлено", viewModel.state.value.events.single().title)
+            assertEquals(LocalDate.parse("2026-11-20"), viewModel.state.value.selectedDate)
+        }
+
+    @Test
+    fun mutationCompletionReloadsTheLatestSelectionEvenIfItsMonthWasAlreadyCached() =
+        runTest {
+            val repository = FakeCalendarRepository()
+            val viewModel = createViewModel(repository)
+            advanceUntilIdle()
+            val gate = CompletableDeferred<Unit>()
+            repository.pendingMutation = gate
+
+            viewModel.onEvent(CalendarCommand.SaveEvent(draft, eventId = 42))
+            runCurrent()
+            viewModel.onEvent(CalendarCommand.SelectDate(LocalDate.parse("2026-11-20")))
+            assertEquals(1, repository.eventLoadCount)
+            gate.complete(Unit)
+            advanceUntilIdle()
+
+            assertEquals(2, repository.eventLoadCount)
+            assertEquals(LocalDate.parse("2026-09-28"), viewModel.state.value.loadedStart)
+            assertEquals(LocalDate.parse("2026-11-20"), viewModel.state.value.selectedDate)
+            assertEquals(CalendarEffect.EventSaved(42), viewModel.state.value.result)
+        }
+
+    @Test
+    fun movePeriodUsesDaysWeeksOrMonthsForTheSelectedMode() =
+        runTest {
+            val viewModel = createViewModel()
+            advanceUntilIdle()
+
+            listOf(
+                Triple(CalendarMode.Day, 2L, LocalDate.parse("2026-10-19")),
+                Triple(CalendarMode.Week, -2L, LocalDate.parse("2026-10-03")),
+                Triple(CalendarMode.Month, 2L, LocalDate.parse("2026-12-17")),
+            ).forEach { (mode, offset, expected) ->
+                viewModel.onEvent(CalendarCommand.SelectDate(LocalDate.parse("2026-10-17")))
+                viewModel.onEvent(CalendarCommand.SelectMode(mode))
+                viewModel.onEvent(CalendarCommand.MovePeriod(offset))
+                advanceUntilIdle()
+                assertEquals(expected, viewModel.state.value.selectedDate)
+            }
+
+            viewModel.onEvent(CalendarCommand.SelectDate(LocalDate.parse("2028-01-31")))
+            viewModel.onEvent(CalendarCommand.MovePeriod(1))
+            advanceUntilIdle()
+            assertEquals(LocalDate.parse("2028-02-29"), viewModel.state.value.selectedDate)
+        }
+
     private fun createViewModel(
         repository: FakeCalendarRepository = FakeCalendarRepository(),
         savedState: SavedStateHandle = SavedStateHandle(),
@@ -244,13 +435,15 @@ class CalendarViewModelTest {
         var eventLoadCount = 0
         var mutationError: Exception? = null
         var pendingLoad: CompletableDeferred<Unit>? = null
+        var pendingMutation: CompletableDeferred<Unit>? = null
+        var loadEvents: suspend (CalendarQuery) -> List<CalendarEvent> = { emptyList() }
 
         override suspend fun getUsers(): Result<List<CalendarUser>> = Result.success(listOf(DemoAccount.user))
 
         override suspend fun getEvents(query: CalendarQuery): Result<List<CalendarEvent>> {
             eventLoadCount++
             pendingLoad?.await()
-            return Result.success(emptyList())
+            return Result.success(loadEvents(query))
         }
 
         override suspend fun getVisibleOwnerIds(): Result<Set<Int>> = Result.success(setOf(DemoAccount.user.id))
@@ -264,6 +457,7 @@ class CalendarViewModelTest {
             eventId: Int?,
         ): Result<CalendarEvent> {
             savedEventIds += eventId
+            pendingMutation?.await()
             mutationError?.let { return Result.failure(it) }
             return Result.success(draft.toEvent(eventId ?: 1))
         }

@@ -19,6 +19,8 @@ data class CalendarState(
     val spaces: List<Space> = emptyList(),
     val boardSettings: BoardSettings = BoardSettings(emptySet()),
     val series: List<CalendarEvent> = emptyList(),
+    val loadedStart: LocalDate? = null,
+    val loadedEndExclusive: LocalDate? = null,
     val isLoading: Boolean = true,
     val isSaving: Boolean = false,
     val result: CalendarEffect? = null,

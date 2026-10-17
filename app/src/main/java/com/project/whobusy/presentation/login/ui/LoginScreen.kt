@@ -27,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.ButtonStyle
+import com.project.whobusy.core.ui.components.TextFieldStyle
 import com.project.whobusy.core.ui.components.WhoBusyButton
 import com.project.whobusy.core.ui.components.WhoBusyLogo
 import com.project.whobusy.core.ui.components.WhoBusyTextField
@@ -73,6 +74,7 @@ fun LoginScreen(
             error = state.emailError?.let { stringResource(it) },
             enabled = !state.isLoading,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Text, imeAction = ImeAction.Next),
+            style = TextFieldStyle.Filled,
         )
         Spacer(Modifier.height(14.dp))
         WhoBusyTextField(
@@ -84,6 +86,7 @@ fun LoginScreen(
             enabled = !state.isLoading,
             keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password),
             visualTransformation = PasswordVisualTransformation(),
+            style = TextFieldStyle.Filled,
         )
         state.error?.let {
             Text(

@@ -24,6 +24,7 @@ import androidx.compose.ui.text.input.PasswordVisualTransformation
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.project.whobusy.R
+import com.project.whobusy.core.ui.components.TextFieldStyle
 import com.project.whobusy.core.ui.components.WhoBusyButton
 import com.project.whobusy.core.ui.components.WhoBusyNotice
 import com.project.whobusy.core.ui.components.WhoBusyScreenLayout
@@ -62,6 +63,7 @@ fun RegistrationScreen(
                 error = state.loginError?.let { stringResource(it) },
                 enabled = !state.isLoading,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                style = TextFieldStyle.Filled,
             )
             Text(
                 stringResource(R.string.auth_login_rules),
@@ -78,6 +80,7 @@ fun RegistrationScreen(
                 error = state.lastNameError?.let { stringResource(it) },
                 enabled = !state.isLoading,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                style = TextFieldStyle.Filled,
             )
             Spacer(Modifier.height(12.dp))
             WhoBusyTextField(
@@ -88,6 +91,7 @@ fun RegistrationScreen(
                 error = state.firstNameError?.let { stringResource(it) },
                 enabled = !state.isLoading,
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Next),
+                style = TextFieldStyle.Filled,
             )
             Spacer(Modifier.height(12.dp))
             WhoBusyTextField(
@@ -98,6 +102,7 @@ fun RegistrationScreen(
                 error = state.emailError?.let { stringResource(it) },
                 enabled = !state.isLoading,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Email, imeAction = ImeAction.Next),
+                style = TextFieldStyle.Filled,
             )
             Spacer(Modifier.height(12.dp))
             WhoBusyTextField(
@@ -109,6 +114,7 @@ fun RegistrationScreen(
                 enabled = !state.isLoading,
                 keyboardOptions = KeyboardOptions(keyboardType = KeyboardType.Password, imeAction = ImeAction.Done),
                 visualTransformation = PasswordVisualTransformation(),
+                style = TextFieldStyle.Filled,
             )
             Spacer(Modifier.height(26.dp))
             WhoBusyNotice(

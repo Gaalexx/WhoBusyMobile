@@ -8,7 +8,10 @@ import kotlinx.serialization.Serializable
 @Serializable
 data class UserDTO(
     val id: Int,
-    val email: String,
+    val login: String,
+    val email: String?,
+    @SerialName("first_name") val firstName: String,
+    @SerialName("last_name") val lastName: String,
     @SerialName("full_name") val fullName: String,
     val role: String,
     val color: String,
@@ -27,5 +30,8 @@ data class UserDTO(
                 },
             color = color,
             isActive = isActive,
+            login = login,
+            firstName = firstName,
+            lastName = lastName,
         )
 }

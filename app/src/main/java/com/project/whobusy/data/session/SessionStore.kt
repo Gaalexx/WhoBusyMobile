@@ -4,6 +4,7 @@ import com.project.whobusy.domain.model.CalendarUser
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
+import kotlinx.coroutines.flow.update
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -28,6 +29,12 @@ constructor() {
         user: CalendarUser,
     ) {
         session.value = Session(token, user)
+    }
+
+    fun updateUser(user: CalendarUser) {
+        session.update { current ->
+            if (current?.user?.id == user.id) current.copy(user = user) else current
+        }
     }
 
     fun clear() {

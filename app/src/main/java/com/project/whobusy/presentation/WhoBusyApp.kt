@@ -10,19 +10,30 @@ import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.presentation.navigation.AppNavHost
+import com.project.whobusy.presentation.session.ui.SessionRestoreScreen
 
 @Composable
 fun WhoBusyApp(viewModel: AppViewModel = hiltViewModel()) {
-    val user by viewModel.user.collectAsStateWithLifecycle()
+    val state by viewModel.state.collectAsStateWithLifecycle()
     val view = LocalView.current
     SideEffect {
         val activity = view.context as? Activity
         if (activity != null) {
             WindowCompat.getInsetsController(activity.window, view).apply {
-                isAppearanceLightStatusBars = user == null
+                isAppearanceLightStatusBars = state.user == null
                 isAppearanceLightNavigationBars = true
             }
         }
     }
-    WhoBusyTheme { AppNavHost(user?.id) }
+    WhoBusyTheme {
+        if (state.startup == AppStartup.Ready) {
+            AppNavHost(state.user?.id)
+        } else {
+            SessionRestoreScreen(
+                loading = state.startup == AppStartup.Loading,
+                onRetry = { viewModel.onEvent(AppCommand.RetryRestore) },
+                onSignIn = { viewModel.onEvent(AppCommand.SignInAgain) },
+            )
+        }
+    }
 }

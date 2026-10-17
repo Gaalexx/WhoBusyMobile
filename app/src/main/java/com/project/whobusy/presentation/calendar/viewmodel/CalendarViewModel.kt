@@ -100,7 +100,7 @@ constructor(
             CalendarCommand.CreateEvent, CalendarCommand.OpenCalendars -> Unit
             CalendarCommand.ResultHandled -> _state.update { it.copy(result = null) }
             CalendarCommand.ClearError -> _state.update { it.copy(error = null) }
-            CalendarCommand.Logout -> auth.logout()
+            CalendarCommand.Logout -> viewModelScope.launch { auth.logout() }
         }
     }
 

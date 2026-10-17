@@ -1,5 +1,6 @@
 package com.project.whobusy.presentation.profile.ui
 
+import androidx.activity.compose.BackHandler
 import androidx.annotation.StringRes
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Column
@@ -11,6 +12,7 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -27,6 +29,7 @@ import com.project.whobusy.core.ui.components.WhoBusyAvatar
 import com.project.whobusy.core.ui.components.WhoBusyButton
 import com.project.whobusy.core.ui.components.WhoBusyListRow
 import com.project.whobusy.core.ui.components.WhoBusyScreenLayout
+import com.project.whobusy.core.ui.components.WhoBusyTextButton
 import com.project.whobusy.core.ui.components.WhoBusyTopBar
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.core.ui.theme.calendarColor
@@ -43,7 +46,13 @@ fun ProfileScreen(
     onAdmin: () -> Unit = {},
     invitationCount: Int = 0,
     @StringRes error: Int? = null,
+    onRequestLogoutAll: () -> Unit = {},
+    onCancelLogoutAll: () -> Unit = {},
+    onConfirmLogoutAll: () -> Unit = {},
+    showLogoutAllConfirmation: Boolean = false,
+    isLoggingOut: Boolean = false,
 ) {
+    BackHandler(enabled = isLoggingOut) {}
     Column(
         Modifier
             .fillMaxSize()
@@ -69,13 +78,13 @@ fun ProfileScreen(
         WhoBusyListRow(
             stringResource(R.string.auth_profile_details),
             stringResource(R.string.auth_profile_details_description),
-            onClick = onEditProfile,
+            onClick = if (isLoggingOut) null else onEditProfile,
         )
         Spacer(Modifier.height(2.dp))
         WhoBusyListRow(
             stringResource(R.string.profile_color),
             stringResource(R.string.auth_profile_color_description),
-            onClick = onEditProfile,
+            onClick = if (isLoggingOut) null else onEditProfile,
         )
         Spacer(Modifier.height(2.dp))
         WhoBusyListRow(
@@ -85,14 +94,14 @@ fun ProfileScreen(
             } else {
                 stringResource(R.string.auth_profile_invitations_pending, invitationCount)
             },
-            onClick = onInvitations,
+            onClick = if (isLoggingOut) null else onInvitations,
         )
         if (user.role == UserRole.ADMIN) {
             Spacer(Modifier.height(2.dp))
             WhoBusyListRow(
                 stringResource(R.string.auth_profile_admin),
                 stringResource(R.string.auth_profile_admin_description),
-                onClick = onAdmin,
+                onClick = if (isLoggingOut) null else onAdmin,
             )
         }
         error?.let {
@@ -110,9 +119,41 @@ fun ProfileScreen(
             onLogout,
             Modifier.padding(horizontal = 16.dp),
             style = ButtonStyle.Destructive,
+            enabled = !isLoggingOut,
+            loading = isLoggingOut && !showLogoutAllConfirmation,
+        )
+        Spacer(Modifier.height(12.dp))
+        WhoBusyButton(
+            stringResource(R.string.auth_logout_all),
+            onRequestLogoutAll,
+            Modifier.padding(horizontal = 16.dp),
+            style = ButtonStyle.Destructive,
+            enabled = !isLoggingOut,
         )
         Spacer(Modifier.height(104.dp))
         Spacer(Modifier.navigationBarsPadding())
+    }
+    if (showLogoutAllConfirmation) {
+        AlertDialog(
+            onDismissRequest = { if (!isLoggingOut) onCancelLogoutAll() },
+            title = { Text(stringResource(R.string.auth_logout_all_confirmation)) },
+            text = { Text(stringResource(R.string.auth_logout_all_description)) },
+            confirmButton = {
+                WhoBusyTextButton(
+                    text = stringResource(R.string.action_logout),
+                    onClick = onConfirmLogoutAll,
+                    enabled = !isLoggingOut,
+                    loading = isLoggingOut,
+                )
+            },
+            dismissButton = {
+                WhoBusyTextButton(
+                    text = stringResource(R.string.action_cancel),
+                    onClick = onCancelLogoutAll,
+                    enabled = !isLoggingOut,
+                )
+            },
+        )
     }
 }
 
@@ -132,6 +173,26 @@ private fun AdminProfilePreview() {
     WhoBusyTheme {
         WhoBusyScreenLayout(topBar = { WhoBusyTopBar(stringResource(R.string.screen_profile)) }) {
             ProfileScreen(CalendarPreviewData.user.copy(role = UserRole.ADMIN), {})
+        }
+    }
+}
+
+@Preview(name = "Выход на всех устройствах", widthDp = 390, heightDp = 844)
+@Composable
+private fun LogoutAllConfirmationPreview() {
+    WhoBusyTheme {
+        WhoBusyScreenLayout(topBar = { WhoBusyTopBar(stringResource(R.string.screen_profile)) }) {
+            ProfileScreen(CalendarPreviewData.user, {}, showLogoutAllConfirmation = true)
+        }
+    }
+}
+
+@Preview(name = "Выполняется выход на всех устройствах", widthDp = 390, heightDp = 844)
+@Composable
+private fun LogoutAllLoadingPreview() {
+    WhoBusyTheme {
+        WhoBusyScreenLayout(topBar = { WhoBusyTopBar(stringResource(R.string.screen_profile)) }) {
+            ProfileScreen(CalendarPreviewData.user, {}, showLogoutAllConfirmation = true, isLoggingOut = true)
         }
     }
 }

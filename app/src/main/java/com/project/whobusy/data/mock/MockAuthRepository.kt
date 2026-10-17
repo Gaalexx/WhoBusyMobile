@@ -28,5 +28,7 @@ constructor(
             accountStore.register(draft).also { sessionStore.save("mock-session", it) }
         }
 
-    override fun logout() = sessionStore.clear()
+    override suspend fun logout(): Result<Unit> = Result.success(sessionStore.clear())
+
+    override suspend fun logoutAll(): Result<Unit> = logout()
 }

@@ -15,5 +15,10 @@ interface AuthRepository {
     suspend fun register(draft: RegistrationDraft): Result<CalendarUser> =
         Result.failure(UnsupportedOperationException("Registration is not supported"))
 
-    fun logout()
+    suspend fun restoreSession(): Result<Unit> = Result.success(Unit)
+
+    suspend fun logout(): Result<Unit>
+
+    suspend fun logoutAll(): Result<Unit> =
+        Result.failure(UnsupportedOperationException("Global logout is not supported"))
 }

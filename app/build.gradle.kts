@@ -6,12 +6,12 @@ plugins {
     alias(libs.plugins.ksp)
 }
 
-val useMockData =
-    providers
-        .gradleProperty("whoBusy.useMockData")
-        .map(String::toBooleanStrict)
-        .getOrElse(true)
-val apiBaseUrl = providers.gradleProperty("whoBusy.apiBaseUrl").getOrElse("")
+val useMockData = false
+//    providers
+//        .gradleProperty("whoBusy.useMockData")
+//        .map(String::toBooleanStrict)
+//        .getOrElse(true)
+val apiBaseUrl = providers.gradleProperty("whoBusy.apiBaseUrl").getOrElse("https://whobusy.ru/api/")
 val escapedApiBaseUrl = apiBaseUrl.replace("\\", "\\\\").replace("\"", "\\\"")
 
 android {
@@ -54,6 +54,7 @@ android {
 
 dependencies {
     implementation(project(":core:ui"))
+    implementation(libs.androidx.datastore.preferences)
     implementation(libs.androidx.lifecycle.runtime.compose)
     testImplementation(libs.kotlinx.coroutines.test)
     implementation(platform(libs.androidx.compose.bom))

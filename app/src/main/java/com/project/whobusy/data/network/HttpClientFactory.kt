@@ -10,7 +10,8 @@ import kotlinx.serialization.json.Json
 object HttpClientFactory {
     fun create(json: Json): HttpClient =
         HttpClient(OkHttp) {
-            expectSuccess = true
+            expectSuccess = false
+            followRedirects = false
             install(ContentNegotiation) {
                 json(json)
             }

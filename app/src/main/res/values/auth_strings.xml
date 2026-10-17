@@ -1,4 +1,12 @@
 <resources>
+    <string name="auth_error_logout">Не удалось выйти из аккаунта. Попробуйте ещё раз.</string>
+    <string name="auth_logout_all">Выйти на всех устройствах</string>
+    <string name="auth_logout_all_confirmation">Выйти на всех устройствах?</string>
+    <string name="auth_logout_all_description">Потребуется снова ввести логин и пароль.</string>
+    <string name="auth_error_logout_all">Не удалось выйти на всех устройствах. Попробуйте ещё раз.</string>
+    <string name="auth_restore_loading">Входим в аккаунт…</string>
+    <string name="auth_restore_error">Не удалось войти в аккаунт. Проверьте подключение.</string>
+    <string name="auth_restore_sign_in">Войти заново</string>
     <string name="auth_login_subtitle">Планы, люди, пространства</string>
     <string name="auth_identifier">Логин или email</string>
     <string name="auth_login_help">Войдите в свой аккаунт, чтобы увидеть пространства и личные планы.</string>

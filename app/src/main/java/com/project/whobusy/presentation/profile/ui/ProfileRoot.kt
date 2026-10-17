@@ -32,7 +32,7 @@ fun ProfileRoot(
                     WhoBusyIconButton(
                         UiIcon.Edit,
                         stringResource(R.string.auth_profile_edit),
-                        onEditProfile,
+                        { if (!viewModel.state.value.isLoggingOut) onEditProfile() },
                         tint = Color.White,
                     )
                 }
@@ -43,11 +43,16 @@ fun ProfileRoot(
             ProfileScreen(
                 user = user,
                 onLogout = { viewModel.onEvent(ProfileCommand.Logout) },
-                onEditProfile = onEditProfile,
-                onInvitations = onInvitations,
-                onAdmin = onAdmin,
+                onEditProfile = { if (!viewModel.state.value.isLoggingOut) onEditProfile() },
+                onInvitations = { if (!viewModel.state.value.isLoggingOut) onInvitations() },
+                onAdmin = { if (!viewModel.state.value.isLoggingOut) onAdmin() },
                 invitationCount = state.invitationCount,
                 error = state.error,
+                onRequestLogoutAll = { viewModel.onEvent(ProfileCommand.RequestLogoutAll) },
+                onCancelLogoutAll = { viewModel.onEvent(ProfileCommand.CancelLogoutAll) },
+                onConfirmLogoutAll = { viewModel.onEvent(ProfileCommand.ConfirmLogoutAll) },
+                showLogoutAllConfirmation = state.showLogoutAllConfirmation,
+                isLoggingOut = state.isLoggingOut,
             )
         }
     }

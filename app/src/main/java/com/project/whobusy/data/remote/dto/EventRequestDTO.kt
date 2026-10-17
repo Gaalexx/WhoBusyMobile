@@ -13,6 +13,10 @@ data class EventRequestDTO(
     val location: String,
     @SerialName("all_day") val allDay: Boolean,
     val status: String,
+    @SerialName("space_id") val spaceId: Int?,
+    val shares: List<EventShareDTO>,
+    val rrule: String?,
+    val color: String?,
 ) {
     companion object {
         fun fromDomain(draft: EventDraft) =
@@ -24,6 +28,10 @@ data class EventRequestDTO(
                 draft.location,
                 draft.allDay,
                 draft.status.name.lowercase(),
+                draft.spaceId,
+                draft.shares.map(EventShareDTO::fromDomain),
+                draft.recurrenceRule,
+                draft.color,
             )
     }
 }

@@ -20,6 +20,11 @@ data class CalendarEventDTO(
     val status: String = "busy",
     @SerialName("display_color") val displayColor: String,
     val rrule: String? = null,
+    @SerialName("space_id") val spaceId: Int? = null,
+    val shares: List<EventShareDTO> = emptyList(),
+    @SerialName("busy_only") val busyOnly: Boolean = false,
+    @SerialName("can_edit") val canEdit: Boolean = false,
+    val color: String? = null,
 ) {
     fun toDomain() =
         CalendarEvent(
@@ -41,5 +46,10 @@ data class CalendarEventDTO(
                 },
             displayColor = displayColor,
             recurrenceRule = rrule,
+            spaceId = spaceId,
+            shares = shares.map { it.toDomain() },
+            busyOnly = busyOnly,
+            canEdit = canEdit,
+            color = color,
         )
 }

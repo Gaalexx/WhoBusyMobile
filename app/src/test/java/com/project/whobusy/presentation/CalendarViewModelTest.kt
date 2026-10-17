@@ -283,8 +283,9 @@ class CalendarViewModelTest {
             password: String,
         ): Result<CalendarUser> = Result.success(DemoAccount.user)
 
-        override fun logout() {
+        override suspend fun logout(): Result<Unit> {
             currentUser.value = null
+            return Result.success(Unit)
         }
     }
 }

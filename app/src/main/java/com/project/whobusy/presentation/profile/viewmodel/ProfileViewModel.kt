@@ -6,6 +6,7 @@ import com.project.whobusy.R
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
 import dagger.hilt.android.lifecycle.HiltViewModel
+import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -31,9 +32,43 @@ constructor(
     }
 
     fun onEvent(command: ProfileCommand) {
+        if (mutableState.value.isLoggingOut) return
         when (command) {
             ProfileCommand.Refresh -> refreshInvitations()
-            ProfileCommand.Logout -> authRepository.logout()
+            ProfileCommand.Logout -> if (mutableState.value.user != null) logout(allDevices = false)
+            ProfileCommand.RequestLogoutAll -> {
+                if (mutableState.value.user != null) {
+                    mutableState.update { it.copy(showLogoutAllConfirmation = true, error = null) }
+                }
+            }
+
+            ProfileCommand.CancelLogoutAll -> mutableState.update { it.copy(showLogoutAllConfirmation = false) }
+            ProfileCommand.ConfirmLogoutAll -> {
+                if (mutableState.value.showLogoutAllConfirmation && mutableState.value.user != null) {
+                    logout(allDevices = true)
+                }
+            }
+        }
+    }
+
+    private fun logout(allDevices: Boolean) {
+        refreshJob?.cancel()
+        mutableState.update { it.copy(isLoggingOut = true, error = null) }
+        viewModelScope.launch {
+            try {
+                if (allDevices) authRepository.logoutAll().getOrThrow() else authRepository.logout().getOrThrow()
+                mutableState.update { it.copy(isLoggingOut = false, showLogoutAllConfirmation = false) }
+            } catch (exception: CancellationException) {
+                throw exception
+            } catch (exception: Exception) {
+                mutableState.update {
+                    it.copy(
+                        isLoggingOut = false,
+                        showLogoutAllConfirmation = false,
+                        error = if (allDevices) R.string.auth_error_logout_all else R.string.auth_error_logout,
+                    )
+                }
+            }
         }
     }
 

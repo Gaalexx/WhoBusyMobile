@@ -1,6 +1,10 @@
 package com.project.whobusy.core.ui.components
 
+import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.width
 import androidx.compose.material3.ButtonDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
@@ -10,6 +14,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.tooling.preview.Preview
+import androidx.compose.ui.unit.dp
 import com.project.whobusy.core.ui.R
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
@@ -20,8 +25,19 @@ fun WhoBusyTextButton(
     modifier: Modifier = Modifier,
     color: Color = MaterialTheme.colorScheme.primary,
     textStyle: TextStyle = MaterialTheme.typography.labelMedium,
+    enabled: Boolean = true,
+    loading: Boolean = false,
 ) {
-    TextButton(onClick, modifier, colors = ButtonDefaults.textButtonColors(contentColor = color)) {
+    TextButton(
+        onClick,
+        modifier,
+        enabled = enabled && !loading,
+        colors = ButtonDefaults.textButtonColors(contentColor = color)
+    ) {
+        if (loading) {
+            CircularProgressIndicator(Modifier.size(20.dp), strokeWidth = 2.dp)
+            Spacer(Modifier.width(8.dp))
+        }
         Text(text, style = textStyle)
     }
 }
@@ -30,4 +46,16 @@ fun WhoBusyTextButton(
 @Composable
 private fun TextButtonPreview() {
     WhoBusyTheme { WhoBusyTextButton(stringResource(R.string.ui_action_today), {}) }
+}
+
+@Preview(name = "Недоступна")
+@Composable
+private fun DisabledTextButtonPreview() {
+    WhoBusyTheme { WhoBusyTextButton(stringResource(R.string.ui_action_continue), {}, enabled = false) }
+}
+
+@Preview(name = "Загрузка")
+@Composable
+private fun LoadingTextButtonPreview() {
+    WhoBusyTheme { WhoBusyTextButton(stringResource(R.string.ui_action_continue), {}, loading = true) }
 }

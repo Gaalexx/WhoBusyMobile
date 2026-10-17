@@ -8,6 +8,7 @@ import com.project.whobusy.data.mock.MockWorkspaceRepository
 import com.project.whobusy.data.remote.ApiConfiguration
 import com.project.whobusy.data.repository.RemoteAuthRepository
 import com.project.whobusy.data.repository.RemoteCalendarRepository
+import com.project.whobusy.data.repository.RemoteWorkspaceRepository
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.CalendarRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
@@ -25,7 +26,10 @@ import javax.inject.Singleton
 object CalendarModule {
     @Provides
     @Singleton
-    fun provideWorkspaceRepository(mock: MockWorkspaceRepository): WorkspaceRepository = mock
+    fun provideWorkspaceRepository(
+        mock: Provider<MockWorkspaceRepository>,
+        remote: Provider<RemoteWorkspaceRepository>,
+    ): WorkspaceRepository = if (BuildConfig.USE_MOCK_DATA) mock.get() else remote.get()
 
     @Provides
     fun provideLoginDefaults(): LoginDefaults =

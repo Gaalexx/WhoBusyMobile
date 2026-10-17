@@ -9,26 +9,28 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.platform.testTag
+import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
+import com.project.whobusy.R
 import com.project.whobusy.core.ui.components.UiDestination
 import com.project.whobusy.core.ui.components.UiIcon
 import com.project.whobusy.core.ui.components.WhoBusyBottomBar
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 
 private val destinations = listOf<ScreenTypes>(ScreenTypes.Calendar, ScreenTypes.Calendars, ScreenTypes.Profile)
-private val items =
-    listOf(
-        UiDestination("Календарь", UiIcon.Calendar),
-        UiDestination("Календари", UiIcon.People),
-        UiDestination("Профиль", UiIcon.Profile),
-    )
 
 @Composable
 internal fun AppBottomBar(
     currentScreen: ScreenTypes.BottomBarNavigatable,
     onSelect: (ScreenTypes) -> Unit,
 ) {
+    val items =
+        listOf(
+            UiDestination(stringResource(R.string.screen_calendar), UiIcon.Calendar),
+            UiDestination(stringResource(R.string.screen_calendars), UiIcon.People),
+            UiDestination(stringResource(R.string.screen_profile), UiIcon.Profile),
+        )
     Box(Modifier.fillMaxSize()) {
         WhoBusyBottomBar(
             items = items,

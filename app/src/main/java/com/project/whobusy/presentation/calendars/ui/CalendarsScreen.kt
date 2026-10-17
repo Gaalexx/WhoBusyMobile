@@ -1,8 +1,12 @@
 package com.project.whobusy.presentation.calendars.ui
 
 import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -11,6 +15,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.platform.testTag
 import androidx.compose.ui.tooling.preview.Preview
 import androidx.compose.ui.unit.dp
 import com.project.whobusy.core.ui.components.WhoBusyPersonRow
@@ -26,7 +31,14 @@ fun CalendarsScreen(
     state: CalendarState,
     onEvent: (CalendarCommand) -> Unit,
 ) {
-    LazyColumn(Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background)) {
+    LazyColumn(
+        modifier = Modifier.fillMaxSize().background(MaterialTheme.colorScheme.background).testTag("calendars-content"),
+        contentPadding =
+            PaddingValues(
+                bottom =
+                    90.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+            ),
+    ) {
         item {
             Text(
                 "Ваша команда — в одном календаре\nВыберите, чьи события показывать рядом с вашими.",

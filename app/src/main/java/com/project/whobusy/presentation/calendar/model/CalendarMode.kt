@@ -7,11 +7,3 @@ enum class CalendarMode(
     Week("Неделя"),
     Month("Месяц"),
 }
-
-enum class CalendarTab(
-    val title: String,
-) {
-    Calendar("Календарь"),
-    Calendars("Календари"),
-    Profile("Профиль"),
-}

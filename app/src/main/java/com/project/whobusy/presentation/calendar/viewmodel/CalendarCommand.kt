@@ -3,7 +3,6 @@ package com.project.whobusy.presentation.calendar.viewmodel
 import com.project.whobusy.domain.model.CalendarEvent
 import com.project.whobusy.domain.model.EventDraft
 import com.project.whobusy.presentation.calendar.model.CalendarMode
-import com.project.whobusy.presentation.calendar.model.CalendarTab
 import java.time.LocalDate
 
 sealed interface CalendarCommand {
@@ -13,10 +12,6 @@ sealed interface CalendarCommand {
 
     data class SelectMode(
         val mode: CalendarMode,
-    ) : CalendarCommand
-
-    data class SelectTab(
-        val tab: CalendarTab,
     ) : CalendarCommand
 
     data class MovePeriod(
@@ -33,6 +28,15 @@ sealed interface CalendarCommand {
 
     data class SaveEvent(
         val draft: EventDraft,
+        val eventId: Int? = null,
+    ) : CalendarCommand
+
+    data class EditEvent(
+        val eventId: Int,
+    ) : CalendarCommand
+
+    data class DeleteEvent(
+        val eventId: Int,
     ) : CalendarCommand
 
     data object Today : CalendarCommand
@@ -41,11 +45,9 @@ sealed interface CalendarCommand {
 
     data object CreateEvent : CalendarCommand
 
-    data object EditEvent : CalendarCommand
+    data object OpenCalendars : CalendarCommand
 
-    data object DeleteEvent : CalendarCommand
-
-    data object CloseEvent : CalendarCommand
+    data object ClearError : CalendarCommand
 
     data object Logout : CalendarCommand
 }

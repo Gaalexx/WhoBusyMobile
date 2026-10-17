@@ -5,9 +5,12 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
+import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.navigationBars
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.width
@@ -73,7 +76,11 @@ fun DayCalendar(
     }
     BoxWithConstraints(Modifier.fillMaxSize().verticalScroll(scroll)) {
         val eventWidth = maxWidth - 76.dp
-        Box(Modifier.fillMaxWidth().height(hourHeight * 24 + 20.dp)) {
+        Box(
+            Modifier.fillMaxWidth().height(
+                hourHeight * 24 + 90.dp + WindowInsets.navigationBars.asPaddingValues().calculateBottomPadding(),
+            ),
+        ) {
             repeat(24) { hour ->
                 Row(
                     Modifier.offset(y = hourHeight * hour).fillMaxWidth(),

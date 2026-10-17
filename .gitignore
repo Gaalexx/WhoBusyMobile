@@ -1,15 +1,61 @@
+# Gradle, Kotlin and Android build outputs (all modules)
+.gradle/
+.kotlin/
+build/
+out/
+.externalNativeBuild/
+.cxx/
+captures/
+*.apk
+*.aab
+*.ap_
+*.dex
+
+# Local SDK paths, environment and signing credentials
+local.properties
+keystore.properties
+key.properties
+signing.properties
+*.jks
+*.keystore
+.env
+.env.*
+!.env.example
+!.env.sample
+!.env.template
+!.env.*.example
+
+# Android Studio: keep shared settings, including .idea/codeStyles/
 *.iml
-.gradle
-/local.properties
-/.idea/caches
-/.idea/libraries
+/.idea/caches/
+/.idea/libraries/
+/.idea/modules/
 /.idea/modules.xml
 /.idea/workspace.xml
+/.idea/tasks.xml
+/.idea/shelf/
 /.idea/navEditor.xml
 /.idea/assetWizardSettings.xml
+/.idea/deploymentTargetSelector.xml
+/.idea/deploymentTargetDropDown.xml
+/.idea/deviceManager.xml
+/.idea/androidTestResultsUserPreferences.xml
+
+# Local agent and cloud configuration
+/.agents/
+/.codex/
+/.aws/
+
+# Logs, crash dumps and profiler captures
+*.log
+*.hprof
+hs_err_pid*
+replay_pid*
+
+# OS and editor temporary files
 .DS_Store
-/build
-/captures
-.externalNativeBuild
-.cxx
-local.properties
+Thumbs.db
+Desktop.ini
+*.swp
+*.swo
+*~

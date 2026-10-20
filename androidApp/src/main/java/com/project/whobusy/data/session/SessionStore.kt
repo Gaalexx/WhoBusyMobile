@@ -1,17 +1,17 @@
 package com.project.whobusy.data.session
 
 import com.project.whobusy.domain.model.CalendarUser
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.map
 import kotlinx.coroutines.flow.update
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class SessionStore
+@SingleIn(AppScope::class)
 @Inject
-constructor() {
+class SessionStore {
     private data class Session(
         val token: String,
         val user: CalendarUser,

@@ -8,11 +8,11 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.project.whobusy.presentation.spaces.viewmodel.SpacesCommand
 import com.project.whobusy.presentation.spaces.viewmodel.SpacesEffect
 import com.project.whobusy.presentation.spaces.viewmodel.SpacesViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @Composable
 fun SpacesRoot(
@@ -20,7 +20,7 @@ fun SpacesRoot(
     onCreate: () -> Unit,
     onJoin: () -> Unit,
     onInvitations: () -> Unit,
-    viewModel: SpacesViewModel = hiltViewModel(),
+    viewModel: SpacesViewModel = metroViewModel(),
 ) {
     LaunchedEffect(viewModel) { viewModel.onEvent(SpacesCommand.Load()) }
     SpacesScreen(viewModel.state.collectAsStateWithLifecycle().value, onOpenSpace, onCreate, onJoin, onInvitations)
@@ -30,7 +30,7 @@ fun SpacesRoot(
 fun CreateSpaceRoot(
     onBack: () -> Unit,
     onOpenSpace: (Int) -> Unit,
-    viewModel: SpacesViewModel = hiltViewModel(),
+    viewModel: SpacesViewModel = metroViewModel(),
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
     LaunchedEffect(viewModel) { viewModel.onEvent(SpacesCommand.Load()) }
@@ -42,7 +42,7 @@ fun CreateSpaceRoot(
 fun JoinSpaceRoot(
     onBack: () -> Unit,
     onOpenSpace: (Int) -> Unit,
-    viewModel: SpacesViewModel = hiltViewModel(),
+    viewModel: SpacesViewModel = metroViewModel(),
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
     LaunchedEffect(viewModel) { viewModel.onEvent(SpacesCommand.Load()) }
@@ -54,7 +54,7 @@ fun JoinSpaceRoot(
 fun InvitationsRoot(
     onBack: () -> Unit,
     onOpenSpace: (Int) -> Unit,
-    viewModel: SpacesViewModel = hiltViewModel(),
+    viewModel: SpacesViewModel = metroViewModel(),
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
     LaunchedEffect(viewModel) { viewModel.onEvent(SpacesCommand.Load()) }

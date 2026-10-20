@@ -1,7 +1,11 @@
 package com.project.whobusy
 
 import android.app.Application
-import dagger.hilt.android.HiltAndroidApp
+import com.project.whobusy.di.AppGraph
+import dev.zacsweers.metro.createGraphFactory
 
-@HiltAndroidApp
-class WhoBusyApplication : Application()
+class WhoBusyApplication : Application() {
+    val appGraph: AppGraph by lazy {
+        createGraphFactory<AppGraph.Factory>().create(applicationContext)
+    }
+}

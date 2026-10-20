@@ -16,17 +16,17 @@ import com.project.whobusy.domain.model.SpaceMember
 import com.project.whobusy.domain.model.SpaceRole
 import com.project.whobusy.domain.model.UserRole
 import com.project.whobusy.domain.repository.WorkspaceRepository
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.time.Clock
 import java.time.LocalDateTime
 import java.util.Locale
 import java.util.UUID
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class MockWorkspaceRepository
+@SingleIn(AppScope::class)
 @Inject
-constructor(
+class MockWorkspaceRepository(
     private val sessionStore: SessionStore,
     private val accounts: MockAccountStore,
     private val clock: Clock,

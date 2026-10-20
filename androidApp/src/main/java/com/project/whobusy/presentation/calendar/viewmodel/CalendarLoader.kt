@@ -9,17 +9,16 @@ import com.project.whobusy.domain.repository.CalendarRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
 import com.project.whobusy.presentation.calendar.model.expandRecurringEvents
 import com.project.whobusy.presentation.calendar.model.monthDates
+import dev.zacsweers.metro.Inject
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ensureActive
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.withContext
 import java.time.LocalDate
 import java.time.YearMonth
-import javax.inject.Inject
 
-class CalendarLoader
 @Inject
-constructor(
+class CalendarLoader(
     private val repository: CalendarRepository,
     private val auth: AuthRepository,
     private val workspace: WorkspaceRepository? = null,

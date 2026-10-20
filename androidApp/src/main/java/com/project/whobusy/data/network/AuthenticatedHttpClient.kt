@@ -3,6 +3,7 @@ package com.project.whobusy.data.network
 import com.project.whobusy.data.remote.ApiConfiguration
 import com.project.whobusy.data.remote.api.AuthAPI
 import com.project.whobusy.data.session.RemoteSessionManager
+import dev.zacsweers.metro.Inject
 import io.ktor.client.HttpClient
 import io.ktor.client.request.HttpRequestBuilder
 import io.ktor.client.request.bearerAuth
@@ -10,9 +11,9 @@ import io.ktor.client.request.request
 import io.ktor.client.statement.HttpResponse
 import io.ktor.http.HttpHeaders
 import io.ktor.http.HttpMethod
-import javax.inject.Inject
 
-class AuthenticatedHttpClient @Inject constructor(
+@Inject
+class AuthenticatedHttpClient(
     private val client: HttpClient,
     private val configuration: ApiConfiguration,
     private val sessions: RemoteSessionManager,

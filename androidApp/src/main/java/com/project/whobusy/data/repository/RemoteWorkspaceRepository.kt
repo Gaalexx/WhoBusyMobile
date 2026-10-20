@@ -11,11 +11,10 @@ import com.project.whobusy.domain.model.SpaceInvitation
 import com.project.whobusy.domain.model.SpaceMember
 import com.project.whobusy.domain.model.SpaceRole
 import com.project.whobusy.domain.repository.WorkspaceRepository
-import javax.inject.Inject
+import dev.zacsweers.metro.Inject
 
-class RemoteWorkspaceRepository
 @Inject
-constructor(
+class RemoteWorkspaceRepository(
     private val api: WorkspaceAPI,
     private val sessionStore: SessionStore,
 ) : WorkspaceRepository {

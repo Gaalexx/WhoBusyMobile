@@ -9,7 +9,10 @@ import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.CalendarRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
 import com.project.whobusy.presentation.calendar.model.expandRecurringEvents
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -23,12 +26,11 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.time.Clock
 import java.time.LocalDate
-import javax.inject.Inject
 
-@HiltViewModel
-class SpacesViewModel
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
 @Inject
-constructor(
+class SpacesViewModel(
     private val workspace: WorkspaceRepository,
     private val calendar: CalendarRepository,
     private val auth: AuthRepository,

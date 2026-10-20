@@ -5,11 +5,10 @@ import com.project.whobusy.data.session.SessionStore
 import com.project.whobusy.domain.model.CalendarUser
 import com.project.whobusy.domain.model.RegistrationDraft
 import com.project.whobusy.domain.repository.AuthRepository
-import javax.inject.Inject
+import dev.zacsweers.metro.Inject
 
-class MockAuthRepository
 @Inject
-constructor(
+class MockAuthRepository(
     private val sessionStore: SessionStore,
     private val accountStore: MockAccountStore = MockAccountStore(),
 ) : AuthRepository {

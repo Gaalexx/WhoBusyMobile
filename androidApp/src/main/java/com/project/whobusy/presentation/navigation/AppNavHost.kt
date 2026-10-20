@@ -7,7 +7,6 @@ import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.key
 import androidx.compose.ui.Modifier
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import androidx.lifecycle.viewmodel.compose.rememberViewModelStoreOwner
 import androidx.lifecycle.viewmodel.navigation3.rememberViewModelStoreNavEntryDecorator
@@ -43,14 +42,15 @@ import com.project.whobusy.presentation.spaces.ui.SpaceSettingsRoot
 import com.project.whobusy.presentation.spaces.ui.SpacesRoot
 import com.project.whobusy.presentation.users.ui.UserEditorRoot
 import com.project.whobusy.presentation.users.ui.UsersRoot
+import dev.zacsweers.metrox.viewmodel.assistedMetroViewModel
 
 @Composable
 fun AppNavHost(userId: Int?) {
     key(userId) {
         val backStack = rememberNavBackStack(if (userId == null) ScreenTypes.Login else ScreenTypes.Calendar)
         val owner = if (userId != null) rememberViewModelStoreOwner() else null
-        val calendar = owner?.let { hiltViewModel<CalendarViewModel>(viewModelStoreOwner = it) }
-        val editor = owner?.let { hiltViewModel<EventEditorViewModel>(viewModelStoreOwner = it) }
+        val calendar = owner?.let { assistedMetroViewModel<CalendarViewModel>(viewModelStoreOwner = it) }
+        val editor = owner?.let { assistedMetroViewModel<EventEditorViewModel>(viewModelStoreOwner = it) }
         val refresh = {
             calendar?.onEvent(CalendarCommand.Refresh)
             Unit

@@ -8,7 +8,10 @@ import androidx.datastore.preferences.core.Preferences
 import androidx.datastore.preferences.core.byteArrayPreferencesKey
 import androidx.datastore.preferences.core.edit
 import androidx.datastore.preferences.core.emptyPreferences
-import dagger.hilt.android.qualifiers.ApplicationContext
+import com.project.whobusy.di.ApplicationContext
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineDispatcher
 import kotlinx.coroutines.CoroutineScope
@@ -20,10 +23,8 @@ import java.nio.ByteBuffer
 import java.nio.charset.CharacterCodingException
 import java.nio.charset.CodingErrorAction
 import java.security.GeneralSecurityException
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
+@SingleIn(AppScope::class)
 class EncryptedRefreshTokenStore internal constructor(
     private val dataStore: DataStore<Preferences>,
     private val cipher: TokenCipher,

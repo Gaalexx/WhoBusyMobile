@@ -13,23 +13,18 @@ import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.CalendarRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
 import com.project.whobusy.presentation.login.viewmodel.LoginDefaults
-import dagger.Module
-import dagger.Provides
-import dagger.hilt.InstallIn
-import dagger.hilt.components.SingletonComponent
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Provides
+import dev.zacsweers.metro.SingleIn
 import java.time.Clock
-import javax.inject.Provider
-import javax.inject.Singleton
 
-@Module
-@InstallIn(SingletonComponent::class)
-object CalendarModule {
+interface CalendarModule {
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideWorkspaceRepository(
-        mock: Provider<MockWorkspaceRepository>,
-        remote: Provider<RemoteWorkspaceRepository>,
-    ): WorkspaceRepository = if (BuildConfig.USE_MOCK_DATA) mock.get() else remote.get()
+        mock: () -> MockWorkspaceRepository,
+        remote: () -> RemoteWorkspaceRepository,
+    ): WorkspaceRepository = if (BuildConfig.USE_MOCK_DATA) mock() else remote()
 
     @Provides
     fun provideLoginDefaults(): LoginDefaults =
@@ -40,24 +35,24 @@ object CalendarModule {
         }
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideClock(): Clock = Clock.systemDefaultZone()
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideApiConfiguration(): ApiConfiguration = ApiConfiguration(BuildConfig.API_BASE_URL)
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideAuthRepository(
-        mock: Provider<MockAuthRepository>,
-        remote: Provider<RemoteAuthRepository>,
-    ): AuthRepository = if (BuildConfig.USE_MOCK_DATA) mock.get() else remote.get()
+        mock: () -> MockAuthRepository,
+        remote: () -> RemoteAuthRepository,
+    ): AuthRepository = if (BuildConfig.USE_MOCK_DATA) mock() else remote()
 
     @Provides
-    @Singleton
+    @SingleIn(AppScope::class)
     fun provideCalendarRepository(
-        mock: Provider<MockCalendarRepository>,
-        remote: Provider<RemoteCalendarRepository>,
-    ): CalendarRepository = if (BuildConfig.USE_MOCK_DATA) mock.get() else remote.get()
+        mock: () -> MockCalendarRepository,
+        remote: () -> RemoteCalendarRepository,
+    ): CalendarRepository = if (BuildConfig.USE_MOCK_DATA) mock() else remote()
 }

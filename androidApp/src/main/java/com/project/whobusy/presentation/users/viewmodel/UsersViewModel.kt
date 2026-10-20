@@ -6,18 +6,20 @@ import com.project.whobusy.R
 import com.project.whobusy.domain.model.UserRole
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class UsersViewModel
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
 @Inject
-constructor(
+class UsersViewModel(
     authRepository: AuthRepository,
     private val workspaceRepository: WorkspaceRepository,
 ) : ViewModel() {

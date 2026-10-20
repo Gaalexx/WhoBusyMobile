@@ -10,6 +10,9 @@ import com.project.whobusy.di.ApplicationScope
 import com.project.whobusy.domain.model.AuthenticationException
 import com.project.whobusy.domain.model.CalendarUser
 import com.project.whobusy.domain.model.RegistrationDraft
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import io.ktor.http.HttpStatusCode
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.CoroutineScope
@@ -23,11 +26,10 @@ import kotlinx.serialization.Serializable
 import kotlinx.serialization.json.Json
 import java.time.Clock
 import java.util.Locale
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class RemoteSessionManager @Inject constructor(
+@SingleIn(AppScope::class)
+@Inject
+class RemoteSessionManager(
     private val api: AuthAPI,
     private val session: SessionStore,
     private val refreshTokens: RefreshTokenStore,

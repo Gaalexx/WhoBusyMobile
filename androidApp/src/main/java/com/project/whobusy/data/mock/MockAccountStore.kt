@@ -6,16 +6,16 @@ import com.project.whobusy.domain.model.ManagedUserDraft
 import com.project.whobusy.domain.model.ProfileDraft
 import com.project.whobusy.domain.model.RegistrationDraft
 import com.project.whobusy.domain.model.UserRole
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import java.util.Locale
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
-class MockAccountStore
+@SingleIn(AppScope::class)
 @Inject
-constructor() {
+class MockAccountStore {
     private val state = MutableStateFlow(seedUsers())
     val users = state.asStateFlow()
 

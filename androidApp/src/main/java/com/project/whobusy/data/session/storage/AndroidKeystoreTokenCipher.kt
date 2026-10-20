@@ -2,14 +2,15 @@ package com.project.whobusy.data.session.storage
 
 import android.security.keystore.KeyGenParameterSpec
 import android.security.keystore.KeyProperties
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.security.KeyStore
 import java.security.UnrecoverableKeyException
 import javax.crypto.KeyGenerator
 import javax.crypto.SecretKey
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
+@SingleIn(AppScope::class)
 class AndroidKeystoreTokenCipher internal constructor(
     private val keyAlias: String,
 ) : TokenCipher {

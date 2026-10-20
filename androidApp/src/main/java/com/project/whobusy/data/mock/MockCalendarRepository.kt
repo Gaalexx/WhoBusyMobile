@@ -11,12 +11,13 @@ import com.project.whobusy.domain.model.EventShare
 import com.project.whobusy.domain.model.EventVisibility
 import com.project.whobusy.domain.model.SpaceRole
 import com.project.whobusy.domain.repository.CalendarRepository
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metro.SingleIn
 import java.time.Clock
 import java.time.LocalDate
-import javax.inject.Inject
-import javax.inject.Singleton
 
-@Singleton
+@SingleIn(AppScope::class)
 class MockCalendarRepository
 @Inject
 constructor(

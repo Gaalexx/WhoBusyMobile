@@ -6,11 +6,10 @@ import com.project.whobusy.domain.model.CalendarQuery
 import com.project.whobusy.domain.model.CalendarUser
 import com.project.whobusy.domain.model.EventDraft
 import com.project.whobusy.domain.repository.CalendarRepository
-import javax.inject.Inject
+import dev.zacsweers.metro.Inject
 
-class RemoteCalendarRepository
 @Inject
-constructor(
+class RemoteCalendarRepository(
     private val api: CalendarAPI,
 ) : CalendarRepository {
     override suspend fun getUsers(): Result<List<CalendarUser>> =

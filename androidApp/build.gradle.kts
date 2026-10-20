@@ -4,8 +4,7 @@ plugins {
     alias(libs.plugins.androidApplication)
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
-    alias(libs.plugins.hilt)
-    alias(libs.plugins.ksp)
+    alias(libs.plugins.metro)
 }
 
 val useMockData = providers.gradleProperty("whoBusy.useMockData").map(String::toBooleanStrict).getOrElse(false)
@@ -27,7 +26,7 @@ dependencies {
     implementation(libs.androidx.lifecycle.runtime.compose)
     implementation(libs.androidx.lifecycle.viewmodel.compose)
     implementation(libs.androidx.lifecycle.viewmodel.navigation3)
-    implementation(libs.androidx.hilt.lifecycle.viewmodel.compose)
+    implementation(libs.metro.viewmodel.compose)
     implementation(libs.androidx.navigation3.runtime)
     implementation(libs.androidx.navigation3.ui)
     implementation(libs.androidx.compose.material3)
@@ -36,8 +35,6 @@ dependencies {
     implementation(libs.androidx.compose.ui)
     implementation(libs.androidx.compose.ui.graphics)
     implementation(libs.androidx.compose.ui.tooling.preview)
-    implementation(libs.hilt.android)
-    ksp(libs.hilt.compiler)
     implementation(libs.ktor.client.core)
     implementation(libs.ktor.client.okhttp)
     implementation(libs.ktor.client.content.negotiation)

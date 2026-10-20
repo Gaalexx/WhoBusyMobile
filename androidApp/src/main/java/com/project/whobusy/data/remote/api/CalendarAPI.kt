@@ -6,17 +6,16 @@ import com.project.whobusy.data.remote.dto.EventRequestDTO
 import com.project.whobusy.data.remote.dto.EventUpdateRequestDTO
 import com.project.whobusy.domain.model.CalendarQuery
 import com.project.whobusy.domain.model.EventDraft
+import dev.zacsweers.metro.Inject
 import io.ktor.client.call.body
 import io.ktor.client.request.parameter
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
-import javax.inject.Inject
 
-class CalendarAPI
 @Inject
-constructor(
+class CalendarAPI(
     private val client: AuthenticatedHttpClient,
 ) {
     suspend fun getEvents(query: CalendarQuery): List<CalendarEventDTO> =

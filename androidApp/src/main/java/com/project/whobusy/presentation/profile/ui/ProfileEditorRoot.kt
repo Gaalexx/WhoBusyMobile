@@ -4,15 +4,15 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.rememberUpdatedState
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.project.whobusy.presentation.profile.viewmodel.ProfileEditorCommand
 import com.project.whobusy.presentation.profile.viewmodel.ProfileEditorViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @Composable
 fun ProfileEditorRoot(
     onBack: () -> Unit,
-    viewModel: ProfileEditorViewModel = hiltViewModel(),
+    viewModel: ProfileEditorViewModel = metroViewModel(),
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentOnBack by rememberUpdatedState(onBack)

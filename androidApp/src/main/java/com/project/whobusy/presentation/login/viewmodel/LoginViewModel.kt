@@ -5,17 +5,19 @@ import androidx.lifecycle.viewModelScope
 import com.project.whobusy.R
 import com.project.whobusy.domain.model.InvalidCredentialsException
 import com.project.whobusy.domain.repository.AuthRepository
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metro.Inject
+import dev.zacsweers.metrox.viewmodel.ViewModelKey
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
-import javax.inject.Inject
 
-@HiltViewModel
-class LoginViewModel
+@ContributesIntoMap(AppScope::class)
+@ViewModelKey
 @Inject
-constructor(
+class LoginViewModel(
     private val repository: AuthRepository,
     defaults: LoginDefaults,
 ) : ViewModel() {

@@ -7,10 +7,11 @@ import com.project.whobusy.domain.model.CalendarUser
 import com.project.whobusy.domain.model.InvalidCredentialsException
 import com.project.whobusy.domain.model.RegistrationDraft
 import com.project.whobusy.domain.repository.AuthRepository
+import dev.zacsweers.metro.Inject
 import io.ktor.http.HttpStatusCode
-import javax.inject.Inject
 
-class RemoteAuthRepository @Inject constructor(
+@Inject
+class RemoteAuthRepository(
     private val sessions: RemoteSessionManager,
     sessionStore: SessionStore,
 ) : AuthRepository {

@@ -1,17 +1,21 @@
 # WhoBusy
 
-Доска планов и занятости по пространствам. Проект объединяет перенесённое Android-приложение на Kotlin, Jetpack Compose, Ktor Client, Hilt с KSP и Navigation 3 с заготовкой Kotlin Multiplatform для Android и Web.
+Доска планов и занятости по пространствам. Проект объединяет перенесённое Android-приложение на Kotlin, Jetpack Compose, Ktor Client, Metro DI и Navigation 3 с заготовкой Kotlin Multiplatform для Android и Web.
 
 Android-приложение реализует [обновлённые 28 экранов Figma](https://www.figma.com/design/dDatbSFzoHbGIn2PWUqZnx?node-id=14-90): вход и регистрацию, общую доску день/неделя/месяц, пространства и приглашения, участников и роли, личные планы с отдельной видимостью, планы пространства, повторения, профиль. Дополнительно доступно управление аккаунтами глобальным администратором.
 
 ## Структура
 
-- `androidApp` — Android-приложение `com.project.whobusy`: экраны на Compose, внедрение зависимостей через Hilt, HTTP-клиент Ktor и Navigation 3.
+- `androidApp` — Android-приложение `com.project.whobusy`: экраны на Compose, внедрение зависимостей через Metro, HTTP-клиент Ktor и Navigation 3.
 - `core:ui` — Android-модуль дизайн-системы: общие UI-компоненты, тема и ресурсы оформления.
 - `shared` — общий модуль исходного примера Compose Multiplatform.
 - `webApp` — Web-приложение исходного примера с целями JavaScript и Wasm.
 
 Android-экраны пока не перенесены в `shared/src/commonMain`; Web-приложение показывает исходный пример.
+
+Metro 1.4.5 работает как Kotlin compiler plugin без KSP и Dagger/Hilt. `WhoBusyApplication` создаёт граф `AppGraph` из пакета `di`; MetroX ViewModel подключает фабрику через Compose. Календарь и редактор плана сохраняют область сессии и `SavedStateHandle` через assisted-фабрики.
+
+Оставшиеся препятствия переносу в общий код — `java.time` и другие JVM API, Android-ресурсы UI, защищённое хранилище и браузерная обработка refresh cookie. Подробности и границы платформ — в [карте проекта](docs/AGENT_MAP.md#границы-мультиплатформенности).
 
 В `androidApp` находятся слои `data`, `domain`, `di`, `presentation`; UI-фичи разделены на `ui`, `viewmodel`, State и Command. Завершение операций хранится в StateFlow до `ResultHandled`. В `core:ui` находятся общие компоненты, стандартные Material Icons через `UiIcon`, цвета, тема и автономные Compose Preview.
 

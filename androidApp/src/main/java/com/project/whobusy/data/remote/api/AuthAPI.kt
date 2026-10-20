@@ -6,6 +6,7 @@ import com.project.whobusy.data.remote.dto.LoginRequestDTO
 import com.project.whobusy.data.remote.dto.RegistrationRequestDTO
 import com.project.whobusy.data.remote.dto.TokenDTO
 import com.project.whobusy.data.remote.dto.UserDTO
+import dev.zacsweers.metro.Inject
 import io.ktor.client.HttpClient
 import io.ktor.client.call.body
 import io.ktor.client.request.bearerAuth
@@ -16,9 +17,9 @@ import io.ktor.http.ContentType
 import io.ktor.http.HttpHeaders
 import io.ktor.http.contentType
 import io.ktor.http.parseServerSetCookieHeader
-import javax.inject.Inject
 
-class AuthAPI @Inject constructor(
+@Inject
+class AuthAPI(
     private val client: HttpClient,
     private val configuration: ApiConfiguration,
 ) {

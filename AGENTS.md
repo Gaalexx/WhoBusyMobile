@@ -14,11 +14,12 @@
 ## Архитектура
 
 - Слои находятся в пакетах `data`, `domain`, `di`, `presentation` внутри `androidApp`.
-- `shared` и `webApp` пока содержат исходный пример Compose Multiplatform; Android-приложение не зависит от `shared`. Общий код размещай в `shared/src/commonMain`, не добавляя туда Android/Hilt-зависимости.
-- `domain` содержит модели и контракты без зависимостей от Android, Compose, Ktor и Hilt.
+- `shared` и `webApp` пока содержат исходный пример Compose Multiplatform; Android-приложение не зависит от `shared`. Общий код размещай в `shared/src/commonMain`, не добавляя туда Android-зависимости.
+- `domain` содержит модели и контракты без зависимостей от Android, Compose, Ktor и DI-фреймворков.
 - `data` реализует контракты `domain`; сетевые DTO и источники данных размещаются здесь.
-- `presentation` работает с контрактами `domain`; связывание с реализациями выполняется через Hilt в `di`.
-- Используй установленный стек: Kotlin, Compose, Ktor Client, Hilt с KSP, Navigation 3. Версии зависимостей задавай в `gradle/libs.versions.toml`.
+- `presentation` работает с контрактами `domain`; связывание с реализациями выполняется через Metro в `di/AppGraph.kt` и provider-интерфейсах.
+- Используй установленный стек: Kotlin, Compose, Ktor Client, Metro DI с compiler plugin и MetroX ViewModel, Navigation 3. KSP и Dagger/Hilt не используются. Версии зависимостей задавай в `gradle/libs.versions.toml`.
+- Обычные ViewModel регистрируй в MetroX через `@Inject`, `@ViewModelKey` и `@ContributesIntoMap(AppScope::class)`. Для `SavedStateHandle` используй assisted-фабрику, создающую handle из `CreationExtras`; область ViewModel определяет `ViewModelStoreOwner`, а не `@SingleIn`.
 - Форматируй `.kt` и `.kts` штатным Reformat Code из Android Studio с проектным `KOTLIN_OFFICIAL` и `.editorconfig`. Не применяй Ktlint для переформатирования: его переносы отличаются от Studio.
 - Для новых фич следуй структуре GameHub: `presentation/<feature>/ui`, `viewmodel`, отдельные файлы состояния и команд, `StateFlow` и единая точка `onEvent`. Отделяй подключённый к ViewModel Root от чистого UI.
 - Данные между экранами передавай полями сериализуемых типов `ScreenTypes` (идентификаторы, ISO-даты и другие необходимые аргументы). Root вызывает callback, а `AppNavHost` создаёт маршрут. Не используй Channel или SharedFlow для навигации. Завершение асинхронной операции сохраняй в StateFlow до явного `ResultHandled` из Root; callbacks не помещай в маршруты.
@@ -26,7 +27,7 @@
 - Для коллекций UI с большим или заранее неизвестным числом элементов используй LazyColumn/LazyRow/LazyVerticalGrid и устойчивые ключи элементов. Не создавай такой список через forEach внутри Column/Row или одного lazy-item. Ограничивай высоту вложенных вертикальных списков и списков в диалогах. Небольшие фиксированные наборы (вкладки, дни недели, варианты enum) можно оставлять обычной компоновкой.
 - Дизайн-система находится в модуле `core:ui`: `components`, `theme` и ресурсы оформления. Она не зависит от моделей приложения. Источник оформления описан в `docs/DESIGN_REFERENCE.md`.
 - Для иконок используй стандартные Material Icons через общий `UiIcon`. Не рисуй собственные SVG или vector paths. Если подходящего значка нет в Material, ищи готовый в интернете, предпочтительно в официальных каталогах; такие исключения должны быть редкими и иметь указанный источник.
-- Для каждого нового визуального компонента и экрана добавляй Compose Preview с автономными данными, без Hilt и сети; показывай значимые состояния.
+- Для каждого нового визуального компонента и экрана добавляй Compose Preview с автономными данными, без DI и сети; показывай значимые состояния.
 - API-контракт и принятые правила из FunProject описаны в [API_CONTRACT.md](docs/API_CONTRACT.md). По умолчанию приложение использует REST; `-PwhoBusy.useMockData=true` включает согласованный моковый режим без сетевых запросов.
 - В удалённом режиме переключай Auth/Calendar/Workspace согласованно. Access-токен держи только в памяти; refresh — в зашифрованном DataStore вне backup, ключ AES-GCM — в Android Keystore. Не сохраняй пароли и ключи в preferences, не логируй токены. Сохраняй ротацию refresh до публикации новой сессии и завершай очистку хранилища до возврата на экран входа.
 - Проверяй изменения подходящими Gradle-задачами из карты. Для изменений только документации достаточно проверки путей и соответствия коду.

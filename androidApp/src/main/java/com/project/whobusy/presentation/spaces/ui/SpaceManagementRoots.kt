@@ -2,16 +2,16 @@ package com.project.whobusy.presentation.spaces.ui
 
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.hilt.lifecycle.viewmodel.compose.hiltViewModel
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.project.whobusy.presentation.spaces.viewmodel.SpacesCommand
 import com.project.whobusy.presentation.spaces.viewmodel.SpacesViewModel
+import dev.zacsweers.metrox.viewmodel.metroViewModel
 
 @Composable
 fun InviteMemberRoot(
     spaceId: Int,
     onBack: () -> Unit,
-    viewModel: SpacesViewModel = hiltViewModel(),
+    viewModel: SpacesViewModel = metroViewModel(),
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
     LaunchedEffect(viewModel, spaceId) { viewModel.onEvent(SpacesCommand.Load(spaceId)) }
@@ -25,7 +25,7 @@ fun SpaceSettingsRoot(
     onBack: () -> Unit,
     onLeave: () -> Unit,
     onDeleted: () -> Unit,
-    viewModel: SpacesViewModel = hiltViewModel(),
+    viewModel: SpacesViewModel = metroViewModel(),
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
     LaunchedEffect(viewModel, spaceId) { viewModel.onEvent(SpacesCommand.Load(spaceId)) }
@@ -39,7 +39,7 @@ fun LeaveSpaceRoot(
     onBack: () -> Unit,
     onLeft: () -> Unit,
     onSettings: () -> Unit,
-    viewModel: SpacesViewModel = hiltViewModel(),
+    viewModel: SpacesViewModel = metroViewModel(),
 ) {
     val state = viewModel.state.collectAsStateWithLifecycle().value
     LaunchedEffect(viewModel, spaceId) { viewModel.onEvent(SpacesCommand.Load(spaceId)) }

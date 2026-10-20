@@ -2,7 +2,9 @@ package com.project.whobusy.presentation.event.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
 import com.project.whobusy.R
 import com.project.whobusy.domain.model.AuthenticationException
 import com.project.whobusy.domain.model.CalendarEvent
@@ -13,7 +15,13 @@ import com.project.whobusy.domain.repository.CalendarRepository
 import com.project.whobusy.domain.repository.WorkspaceRepository
 import com.project.whobusy.presentation.event.model.EventFormState
 import com.project.whobusy.presentation.event.model.withAllDay
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactoryKey
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.asStateFlow
@@ -22,17 +30,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
-import javax.inject.Inject
 
-@HiltViewModel
-class EventEditorViewModel
-@Inject
-constructor(
+@AssistedInject
+class EventEditorViewModel(
     private val calendarRepository: CalendarRepository,
     private val workspaceRepository: WorkspaceRepository,
     private val authRepository: AuthRepository,
     private val clock: Clock,
-    private val savedStateHandle: SavedStateHandle,
+    @Assisted private val savedStateHandle: SavedStateHandle,
 ) : ViewModel() {
     private val _state = MutableStateFlow(EditorState(form = EventFormState.initial(LocalDate.now(clock), null)))
     val state = _state.asStateFlow()
@@ -184,6 +189,15 @@ constructor(
                     },
                 )
             }
+    }
+
+    @AssistedFactory
+    @ContributesIntoMap(AppScope::class)
+    @ViewModelAssistedFactoryKey(EventEditorViewModel::class)
+    fun interface Factory : ViewModelAssistedFactory {
+        override fun create(extras: CreationExtras): EventEditorViewModel = create(extras.createSavedStateHandle())
+
+        fun create(savedStateHandle: SavedStateHandle): EventEditorViewModel
     }
 
     private companion object {

@@ -19,16 +19,15 @@ import com.project.whobusy.domain.model.BoardSettings
 import com.project.whobusy.domain.model.ManagedUserDraft
 import com.project.whobusy.domain.model.ProfileDraft
 import com.project.whobusy.domain.model.SpaceRole
+import dev.zacsweers.metro.Inject
 import io.ktor.client.call.body
 import io.ktor.client.request.setBody
 import io.ktor.http.ContentType
 import io.ktor.http.HttpMethod
 import io.ktor.http.contentType
-import javax.inject.Inject
 
-class WorkspaceAPI
 @Inject
-constructor(
+class WorkspaceAPI(
     private val client: AuthenticatedHttpClient,
 ) {
     suspend fun getSpaces(): List<SpaceDTO> = client.request("spaces").body()

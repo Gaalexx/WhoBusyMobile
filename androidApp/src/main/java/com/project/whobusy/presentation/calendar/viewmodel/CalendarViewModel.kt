@@ -2,13 +2,21 @@ package com.project.whobusy.presentation.calendar.viewmodel
 
 import androidx.lifecycle.SavedStateHandle
 import androidx.lifecycle.ViewModel
+import androidx.lifecycle.createSavedStateHandle
 import androidx.lifecycle.viewModelScope
+import androidx.lifecycle.viewmodel.CreationExtras
 import com.project.whobusy.R
 import com.project.whobusy.domain.model.CalendarEvent
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.CalendarRepository
 import com.project.whobusy.presentation.calendar.model.CalendarMode
-import dagger.hilt.android.lifecycle.HiltViewModel
+import dev.zacsweers.metro.AppScope
+import dev.zacsweers.metro.Assisted
+import dev.zacsweers.metro.AssistedFactory
+import dev.zacsweers.metro.AssistedInject
+import dev.zacsweers.metro.ContributesIntoMap
+import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactory
+import dev.zacsweers.metrox.viewmodel.ViewModelAssistedFactoryKey
 import kotlinx.coroutines.CancellationException
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -17,17 +25,14 @@ import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.launch
 import java.time.Clock
 import java.time.LocalDate
-import javax.inject.Inject
 
-@HiltViewModel
-class CalendarViewModel
-@Inject
-constructor(
+@AssistedInject
+class CalendarViewModel(
     private val repository: CalendarRepository,
     private val auth: AuthRepository,
     private val loader: CalendarLoader,
     private val clock: Clock,
-    private val savedState: SavedStateHandle,
+    @Assisted private val savedState: SavedStateHandle,
 ) : ViewModel() {
     private val initialDate = savedState.get<String>("date")?.let(LocalDate::parse) ?: LocalDate.now(clock)
     private val _state =
@@ -198,6 +203,15 @@ constructor(
         loadJob?.cancel()
         loadJob = null
         pendingLoad = null
+    }
+
+    @AssistedFactory
+    @ContributesIntoMap(AppScope::class)
+    @ViewModelAssistedFactoryKey(CalendarViewModel::class)
+    fun interface Factory : ViewModelAssistedFactory {
+        override fun create(extras: CreationExtras): CalendarViewModel = create(extras.createSavedStateHandle())
+
+        fun create(savedState: SavedStateHandle): CalendarViewModel
     }
 
     private data class PendingLoad(

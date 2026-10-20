@@ -4,7 +4,7 @@
 
 Приложение реализует механику пространств из Figma 02 (28 экранов) и FunProject API 2.0. Модули: `androidApp`, `core:ui`, `shared` и `webApp`; слои Android-приложения — пакеты `data/domain/di/presentation`. Auth/Calendar/Workspace выбираются согласованно через BuildConfig.USE_MOCK_DATA. В `androidApp/build.gradle.kts` свойство `whoBusy.useMockData` читается через Gradle providers: по умолчанию `false` (REST), `-PwhoBusy.useMockData=true` включает моки. Моки хранят данные в памяти без сети. Штатный адрес REST — `https://whobusy.ru/api/`, переопределяется `-PwhoBusy.apiBaseUrl=https://<server>/api/`.
 
-Перед изменениями читай относящиеся к задаче файлы. Чистые экраны и Preview не используют Hilt, сеть и data. Обновляй карту при изменении архитектуры/поведения. Контракт: [API_CONTRACT.md](API_CONTRACT.md), источник оформления и соответствие 28 экранов: [DESIGN_REFERENCE.md](DESIGN_REFERENCE.md).
+Перед изменениями читай относящиеся к задаче файлы. Чистые экраны и Preview не используют DI, сеть и data. Обновляй карту при изменении архитектуры/поведения. Контракт: [API_CONTRACT.md](API_CONTRACT.md), источник оформления и соответствие 28 экранов: [DESIGN_REFERENCE.md](DESIGN_REFERENCE.md).
 
 ## Модули и сборка
 
@@ -17,7 +17,7 @@
 
 Android-экраны и предметная логика пока находятся в `androidApp`, в `shared/src/commonMain` не переносились. Web показывает исходный пример Compose Multiplatform. `core:ui` остаётся Android-модулем.
 
-Версии в `gradle/libs.versions.toml`: Kotlin 2.4.20, AGP 9.1.1, Compose Multiplatform 1.12.1. Wrapper использует Gradle 9.5.1, daemon JVM — Azul JDK 21 из `gradle/gradle-daemon-jvm.properties`. JVM bytecode target у `androidApp` и `core:ui` — 17, у Android-цели `shared` — 11. Android SDK: compile 37, target 36, min 34.
+Версии в `gradle/libs.versions.toml`: Kotlin 2.4.20, AGP 9.1.1, Compose Multiplatform 1.12.1, Metro 1.4.5. Wrapper использует Gradle 9.5.1, daemon JVM — Azul JDK 21 из `gradle/gradle-daemon-jvm.properties`. JVM bytecode target у `androidApp` и `core:ui` — 17, у Android-цели `shared` — 11. Android SDK: compile 37, target 36, min 34. Metro подключён Kotlin compiler plugin в `androidApp/build.gradle.kts`; runtime добавляется плагином, MetroX — зависимость `metrox-viewmodel-compose`. KSP и Dagger/Hilt-зависимостей в проекте нет.
 
 ## Точки входа и расположение
 
@@ -25,7 +25,7 @@ Android-экраны и предметная логика пока находя�
 
 | Область | Путь | Ответственность |
 | --- | --- | --- |
-| Запуск | `WhoBusyApplication.kt`, `MainActivity.kt` | Hilt, edge-to-edge, корневая Composable |
+| Запуск | `WhoBusyApplication.kt`, `MainActivity.kt` | Создание AppGraph, передача MetroX-фабрики в Compose, edge-to-edge, корневая Composable |
 | Приложение | `presentation/WhoBusyApp.kt`, `AppViewModel.kt`, `AppState.kt`, `AppCommand.kt`, `session/ui/SessionRestoreScreen.kt` | Тема, пользователь сессии, восстановление входа, повтор/новый вход, системные панели |
 | Навигация | `presentation/navigation/` | Сериализуемые ScreenTypes, NavDisplay, overlay-бар, ViewModel области сессии |
 | Вход | `presentation/login/ui/`, `viewmodel/` | Логин или email, пароль, ошибки, переход к регистрации |
@@ -37,15 +37,37 @@ Android-экраны и предметная логика пока находя�
 | План | `presentation/event/ui/`, `model/`, `viewmodel/` | Подробности и busy-only, общий черновик редактора, размещение, видимость, даты/весь день/статус/повторы |
 | Профиль | `presentation/profile/ui/`, `viewmodel/` | Данные пользователя, приглашения, выход с текущего/всех устройств, изменение имени/email/цвета/пароля |
 | Аккаунты | `presentation/users/ui/`, `viewmodel/` | CRUD пользователей для глобального admin; роли и активность аккаунта |
-| Domain | `domain/model/`, `domain/repository/` | Модели и контракты без Android/Compose/Ktor/Hilt |
+| Domain | `domain/model/`, `domain/repository/` | Модели и контракты без Android/Compose/Ktor/DI; даты пока используют java.time |
 | Аккаунты моков | `data/mock/MockAccountStore.kt`, `MockAuthRepository.kt` | Общий StateFlow аккаунтов, пароли, нормализация/валидация, регистрация/вход |
 | Пространства моков | `data/mock/MockWorkspaceRepository.kt`, `MockWorkspaceData.kt` | Членство, роли, приглашения, настройки доски, профиль, администрирование, история отсоединения |
 | Планы моков | `data/mock/MockCalendarRepository.kt`, `MockPlanData.kt` | CRUD, права, маскировка, применение выхода/удаления пространства или аккаунта |
 | Сессия | `data/session/SessionStore.kt`, `RemoteSessionManager.kt`, `storage/` | Access/user в памяти, refresh в зашифрованном DataStore, ключ Android Keystore, ротация/выход/восстановление |
 | REST | `data/network/`, `data/remote/`, `data/repository/` | HTTPS Ktor/OkHttp, Auth/Calendar/Workspace API и DTO, реальные реализации всех трёх контрактов |
-| DI | `di/NetworkModule.kt`, `CalendarModule.kt`, `SessionModule.kt` | HttpClient/JSON/Clock, единый режим mock/remote, singleton защищённого хранилища и application CoroutineScope |
+| Граф DI | `di/AppGraph.kt`, `di/ApplicationContext.kt` | Metro AppScope, provider-интерфейсы CalendarModule/NetworkModule/SessionModule и MetroX ViewModelGraph; application Context через собственный qualifier |
+| Провайдеры DI | `di/NetworkModule.kt`, `di/CalendarModule.kt`, `di/SessionModule.kt` | HttpClient/JSON/Clock, единый режим mock/remote, singleton защищённого хранилища и application CoroutineScope |
+| Фабрика ViewModel | `di/AppViewModelFactory.kt` | MetroViewModelFactory с картами обычных ViewModel и assisted-фабрик |
 
 `presentation/calendars/` и методы выбора ownerIds в CalendarRepository сохранены для совместимости старого исходного кода, из навигации не вызываются. Вторая вкладка имеет исторический тип `ScreenTypes.Calendars`, отображает новый `SpacesRoot`.
+
+## Внедрение зависимостей
+
+`WhoBusyApplication.appGraph` лениво вызывает `createGraphFactory<AppGraph.Factory>().create(applicationContext)`. `AppGraph` объединяет `CalendarModule`, `NetworkModule`, `SessionModule` и `ViewModelGraph`; Context передаётся параметром `@Provides @ApplicationContext`. `@SingleIn(AppScope::class)` сохраняет singleton-объекты в пределах графа. Provider-функции `() -> Mock…` / `() -> Remote…` создают только выбранную ветку `BuildConfig.USE_MOCK_DATA`, поэтому моковый режим не инициализирует сеть и защищённое хранилище.
+
+`AppViewModelFactory` внедряет карты `Map<KClass<out ViewModel>, () -> ViewModel>` и `Map<KClass<out ViewModel>, () -> ViewModelAssistedFactory>` и публикуется как `MetroViewModelFactory`. `MainActivity` передаёт её через `LocalMetroViewModelFactory`. Девять обычных ViewModel (`App`, `Login`, `Registration`, `BoardSettings`, `Spaces`, `Profile`, `ProfileEditor`, `Users`, `UserEditor`) используют `@Inject`, `@ViewModelKey`, `@ContributesIntoMap(AppScope::class)` и `metroViewModel()`. `CalendarViewModel` и `EventEditorViewModel` используют `@AssistedInject`; вложенные Factory создают `SavedStateHandle` из `CreationExtras.createSavedStateHandle()` и зарегистрированы через `@ViewModelAssistedFactoryKey`. Их получает `assistedMetroViewModel()` с общим owner сессии. Самим ViewModel singleton-scope не назначается; жизненным циклом управляет ViewModelStore.
+
+## Границы мультиплатформенности
+
+Metro поддерживает KMP, но код приложения пока остаётся в `androidApp`, а `shared` и `webApp` содержат пример. Следующие зависимости ограничивают прямой перенос в `commonMain`; это состояние кода, а не выполненная миграция.
+
+| Приоритет | Место | Ограничение и граница переноса |
+| --- | --- | --- |
+| 1 — предметные даты | `domain/model/`, `presentation/calendar/`, `presentation/event/`, `data/remote/dto/` | LocalDate/LocalDateTime/YearMonth/Clock из `java.time` требуют общих типов дат и адаптации расчётов, сериализации и форматирования |
+| 2 — UI и ресурсы | `core/ui/build.gradle.kts`, `core/ui/src/main/res/`, `androidApp/src/main/res/`, UI и State в `presentation/` | core:ui — Android library; `R`, `androidx.compose.ui.res`, `@StringRes Int` и Android string ID в состояниях требуют общих ресурсов и представления ошибок; Activity и управление системными панелями остаются в Android-host |
+| 3 — Web-авторизация | `data/remote/api/AuthAPI.kt`, `data/session/RemoteSessionManager.kt` | Текущий native-клиент читает `Set-Cookie`, вручную задаёт `Cookie` и хранит refresh. Браузер управляет HttpOnly cookie сам; для Web нужна отдельная реализация авторизации с browser credentials и согласованными CORS/SameSite, без выдачи refresh JavaScript-коду |
+| 4 — хранилище и транспорт | `data/session/storage/`, `data/network/HttpClientFactory.kt`, `data/remote/ApiConfiguration.kt` | Context/noBackupFilesDir, java.io.File/java.nio.ByteBuffer, Android Keystore/JCE и OkHttp/java.net.URI требуют платформенных реализаций; интерфейсы `RefreshTokenStore` и `TokenCipher` уже отделяют защищённое хранение |
+| 5 — JVM-утилиты и выполнение | `data/mock/`, `data/session/RemoteSessionManager.kt`, `di/SessionModule.kt` | java.util.UUID/Locale, synchronized и Dispatchers.IO не переносятся напрямую в общий код с браузерными целями; нужны общие аналоги либо внедряемые платформенные зависимости |
+
+Самим [ViewModel](https://kotlinlang.org/docs/multiplatform/compose-viewmodel.html), Navigation 3 и [DataStore](https://developer.android.com/kotlin/multiplatform/datastore) замена только из-за KMP не требуется; нужны соответствующие платформам артефакты и реализации. `Application`, `MainActivity` и Android Keystore закономерно остаются на Android. Ограничение Web-авторизации следует из браузерных правил доступа к [Set-Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie) и [Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie); копирование native-хранилища refresh в Web его не решает.
 
 ## Дизайн-система и строки
 
@@ -178,14 +200,15 @@ Android-сценарии: `androidApp/src/androidTest/.../AppNavigationTest.kt` 
 
 ## Выполненные проверки
 
-При настройке переноса в WhoBusy2 выполнены следующие проверки:
+После перехода Android-приложения на Metro 1.4.5 выполнены следующие проверки:
 
-- Собраны Debug APK, неподписанный Release APK и APK инструментальных тестов: `:androidApp:assembleDebug`, `:androidApp:assembleRelease`, `:androidApp:assembleDebugAndroidTest`.
-- `:androidApp:testDebugUnitTest` и `:core:ui:testDebugUnitTest`: запущены 174 и 7 JVM-тестов соответственно, все прошли.
+- Собраны Debug APK, неподписанный Release APK с R8 и APK инструментальных тестов: `:androidApp:assembleDebug`, `:androidApp:assembleRelease`, `:androidApp:assembleDebugAndroidTest`.
+- `:androidApp:testDebugUnitTest` и `:core:ui:testDebugUnitTest`: запущены 174 и 7 JVM-тестов соответственно, все прошли без пропусков.
 - Android Lint: 0 ошибок, 84 предупреждения.
-- Скомпилированы Android-цель `shared` и JavaScript/Wasm-цели `shared` и `webApp`.
-- Инструментальные тесты после переноса не запускались: сборка AndroidTest APK подтверждает только компиляцию.
-- Web-приложение и Android-экраны после переноса на устройстве вручную не проверялись.
+- Инструментальные тесты после перехода на Metro не запускались: сборка AndroidTest APK подтверждает только компиляцию.
+- Web-приложение и Android-экраны на устройстве при переходе на Metro вручную не проверялись.
+
+При первоначальном переносе в WhoBusy2 также скомпилированы Android-цель `shared` и JavaScript/Wasm-цели `shared` и `webApp`; при замене DI эти проверки не повторялись. Штатный CLI-форматтер Studio не смог запуститься в sandbox из-за запрета Unix domain socket (`Operation not permitted`); успешная проверка форматирования не заявляется.
 
 Прежние прогоны эмулятора, визуальные проверки 28 экранов, проверки форматтером и операции на живом API относятся к исходному Android-проекту WhoBusy. Их нельзя считать проверками текущего KMP-проекта. Дата и исходный backend snapshot, на котором основан API-контракт, сохранены в [API_CONTRACT.md](API_CONTRACT.md).
 

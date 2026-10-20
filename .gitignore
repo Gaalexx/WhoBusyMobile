@@ -1,7 +1,8 @@
 # Gradle, Kotlin and Android build outputs (all modules)
 .gradle/
 .kotlin/
-build/
+**/build/
+!src/**/build/
 out/
 .externalNativeBuild/
 .cxx/
@@ -40,11 +41,22 @@ signing.properties
 /.idea/deploymentTargetDropDown.xml
 /.idea/deviceManager.xml
 /.idea/androidTestResultsUserPreferences.xml
+/.idea/receipt.json
 
 # Local agent and cloud configuration
 /.agents/
 /.codex/
 /.aws/
+
+# Kotlin Multiplatform, Web and Xcode local files
+node_modules/
+xcuserdata/
+*.xcodeproj/*
+!*.xcodeproj/project.pbxproj
+!*.xcodeproj/xcshareddata/
+!*.xcodeproj/project.xcworkspace/
+!*.xcworkspace/contents.xcworkspacedata
+**/xcshareddata/WorkspaceSettings.xcsettings
 
 # Logs, crash dumps and profiler captures
 *.log

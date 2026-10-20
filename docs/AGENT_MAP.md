@@ -2,13 +2,26 @@
 
 ## Состояние и правила
 
-Приложение реализует механику пространств из Figma 02 (28 экранов) и FunProject API 2.0. Модули: `app` и `core:ui`; слои приложения — пакеты `data/domain/di/presentation`. Auth/Calendar/Workspace выбираются согласованно через BuildConfig.USE_MOCK_DATA. Сейчас в `app/build.gradle.kts` задано `useMockData = false` (REST), чтение свойства `whoBusy.useMockData` закомментировано. Моки хранят данные в памяти без сети. Штатный адрес REST — `https://whobusy.ru/api/`, переопределяется `-PwhoBusy.apiBaseUrl=https://<server>/api/`.
+Приложение реализует механику пространств из Figma 02 (28 экранов) и FunProject API 2.0. Модули: `androidApp`, `core:ui`, `shared` и `webApp`; слои Android-приложения — пакеты `data/domain/di/presentation`. Auth/Calendar/Workspace выбираются согласованно через BuildConfig.USE_MOCK_DATA. В `androidApp/build.gradle.kts` свойство `whoBusy.useMockData` читается через Gradle providers: по умолчанию `false` (REST), `-PwhoBusy.useMockData=true` включает моки. Моки хранят данные в памяти без сети. Штатный адрес REST — `https://whobusy.ru/api/`, переопределяется `-PwhoBusy.apiBaseUrl=https://<server>/api/`.
 
 Перед изменениями читай относящиеся к задаче файлы. Чистые экраны и Preview не используют Hilt, сеть и data. Обновляй карту при изменении архитектуры/поведения. Контракт: [API_CONTRACT.md](API_CONTRACT.md), источник оформления и соответствие 28 экранов: [DESIGN_REFERENCE.md](DESIGN_REFERENCE.md).
 
+## Модули и сборка
+
+| Модуль | Назначение и связи |
+| --- | --- |
+| `androidApp` | Перенесённое Android-приложение `com.project.whobusy`; зависит от `core:ui`, не подключает `shared` |
+| `core:ui` | Android-дизайн-система без зависимости от моделей приложения |
+| `shared` | Исходный пример Compose Multiplatform; цели Android, JavaScript и Wasm, общий UI в `shared/src/commonMain/kotlin/com/gaalex/whobusymp/App.kt` |
+| `webApp` | Браузерная точка входа `webApp/src/webMain/kotlin/com/gaalex/whobusymp/main.kt`, вызывает `shared.App` через ComposeViewport; цели JavaScript и Wasm |
+
+Android-экраны и предметная логика пока находятся в `androidApp`, в `shared/src/commonMain` не переносились. Web показывает исходный пример Compose Multiplatform. `core:ui` остаётся Android-модулем.
+
+Версии в `gradle/libs.versions.toml`: Kotlin 2.4.20, AGP 9.1.1, Compose Multiplatform 1.12.1. Wrapper использует Gradle 9.5.1, daemon JVM — Azul JDK 21 из `gradle/gradle-daemon-jvm.properties`. JVM bytecode target у `androidApp` и `core:ui` — 17, у Android-цели `shared` — 11. Android SDK: compile 37, target 36, min 34.
+
 ## Точки входа и расположение
 
-Пути относительно `app/src/main/java/com/project/whobusy/`, если не указано иначе.
+Пути относительно `androidApp/src/main/java/com/project/whobusy/`, если не указано иначе.
 
 | Область | Путь | Ответственность |
 | --- | --- | --- |
@@ -44,9 +57,9 @@
 - Декоративные свотчи палитры и thumb переключателя используют ресурсы `core/ui/src/main/res/drawable/`. Экспорты Figma сохранены в `core/ui/src/main/assets/design/` как исходный архив оформления. Предметные иконки из него не отображаются; временных Figma URL в коде нет.
 - `WhoBusyTextField` имеет стили Plain и Filled. Вход и регистрация используют Filled: голубой primaryContainer, синяя обводка 1 dp, тёмные подписи и placeholder; ошибка окрашивает обводку и подпись в error. Остальные формы сохраняют Plain. Автономный AuthTextFieldsPreview показывает пустое, заполненное, ошибочное и disabled-состояния.
 - Общие компоненты не зависят от моделей приложения. Новые визуальные компоненты и чистые экраны имеют автономные Preview со значимыми состояниями.
-- Логотип — исходный пользовательский `WhoBusy.png`, без изменений сохранённый в `core/ui/src/main/res/drawable-nodpi/whobusy_logo.png`. `components/WhoBusyLogo.kt` показывает его на экране входа без tint и имеет Preview. Календарная иллюстрация пустой доски остаётся отдельным WhoBusyCalendarBadge.
-- Значок запуска задан в `app/src/main/AndroidManifest.xml` через `mipmap-anydpi/ic_launcher{,_round}.xml`: оба используют PNG из core:ui, белый фон и отступ foreground 12% для масок Android. Файлы слоёв — `app/src/main/res/drawable/ic_launcher_{foreground,background}.xml`. При minSdk 34 используются адаптивные XML; старые density-specific WebP сохранены и не являются источником текущего логотипа. Цветной PNG не используется как монохромная маска.
-- Тексты приложения — `app/src/main/res/values/{strings,auth_strings,spaces_strings,board_strings,event_strings,admin_strings}.xml`; общие — `core/ui/src/main/res/values/strings.xml` с префиксом `ui_`. Ошибки состояния представлены `@StringRes Int?`; UI разрешает их через stringResource. Domain от ресурсов Android не зависит.
+- Логотип внутри приложения — исходный пользовательский `WhoBusy.png`, без изменений сохранённый в `core/ui/src/main/res/drawable-nodpi/whobusy_logo.png`. `components/WhoBusyLogo.kt` показывает его на экранах входа и восстановления сессии без tint и имеет Preview. Календарная иллюстрация пустой доски остаётся отдельным WhoBusyCalendarBadge.
+- Значок запуска задан в `androidApp/src/main/AndroidManifest.xml` через `mipmap-anydpi/ic_launcher{,_round}.xml`: оба используют отдельный `androidApp/src/main/res/drawable-nodpi/whobusy_launcher_logo.png` — неизменённый пользовательский `WhoBusyAndroidAppLogo.png`. Файлы слоёв — `androidApp/src/main/res/drawable/ic_launcher_{foreground,background}.xml`: foreground с отступом 12% сохраняет знак внутри масок Android, фоновый bitmap заполняет края тем же изображением. Ресурс из core:ui внутри приложения не заменяется. При minSdk 34 используются адаптивные XML; старые density-specific WebP сохранены и не являются источником текущего логотипа. Цветной PNG не используется как монохромная маска.
+- Тексты приложения — `androidApp/src/main/res/values/{strings,auth_strings,spaces_strings,board_strings,event_strings,admin_strings}.xml`; общие — `core/ui/src/main/res/values/strings.xml` с префиксом `ui_`. Ошибки состояния представлены `@StringRes Int?`; UI разрешает их через stringResource. Domain от ресурсов Android не зависит.
 - `WhoBusyScreenLayout` объединяет статусный отступ, шапку и содержимое до нижней границы. `AppBottomBar` размещает панель поверх NavDisplay в прозрачном Box: 80% ширины, 64 dp высоты, радиус 25 dp, 10 dp снизу плюс navigation bar inset. Содержимое видно по бокам и ниже; у списка и FAB есть отступы для доступа к последним элементам.
 
 ## Навигация и состояния
@@ -124,18 +137,26 @@ EventEditorViewModel объединяет Editor/Visibility/SpaceVisibility/Date
 | Даты/повторения/геометрия | calendar/model, соответствующие JVM-тесты |
 | Тексты | values/*.xml соответствующей фичи; stringResource в UI |
 | Зависимости | gradle/libs.versions.toml, build.gradle.kts модулей |
-| SDK/сборка | app/build.gradle.kts, core/ui/build.gradle.kts, wrapper, daemon JVM properties |
+| SDK/сборка | androidApp/build.gradle.kts, core/ui/build.gradle.kts, shared/build.gradle.kts, webApp/build.gradle.kts, wrapper, daemon JVM properties |
+| Общий UI и Web-пример | shared/src/commonMain/, webApp/src/webMain/; код приложения сюда пока не перенесён |
 
 ```bash
-./gradlew :app:assembleDebug :app:testDebugUnitTest :app:lintDebug
+./gradlew :androidApp:assembleDebug :androidApp:assembleRelease
+./gradlew :androidApp:testDebugUnitTest :androidApp:lintDebug
 ./gradlew :core:ui:testDebugUnitTest
-./gradlew :app:assembleDebugAndroidTest
-./gradlew :app:connectedDebugAndroidTest
+./gradlew :androidApp:assembleDebugAndroidTest
+./gradlew :androidApp:connectedDebugAndroidTest
+./gradlew :shared:compileAndroidMain
+./gradlew :webApp:compileKotlinJs :webApp:compileKotlinWasmJs
+./gradlew :webApp:jsBrowserDevelopmentRun
+./gradlew :webApp:wasmJsBrowserDevelopmentRun
 ```
 
-JVM-тесты в `app/src/test/` проверяют аккаунты/нормализацию/пароли, пространства/роли/приглашения/последнего администратора, видимость/CRUD/отсоединение планов, повторения и даты, ViewModel/состояния завершения/черновик, сериализацию аргументов маршрутов и разные вхождения одной серии. Проверяются сохранность результата без UI, подтверждение ResultHandled и блокировка повторной операции до подтверждения. MockEngine-тесты RemoteAuth/Calendar/Workspace проверяют актуальные DTO, cookie, маршруты, фильтры, права и обработку ошибок API 2.0. RemoteSessionManagerTest проверяет объединение параллельных 401, ротацию при отмене coroutine, привязку refresh к серверу, согласованность пары access/refresh, отклонение ответа старой сессии и сериализацию logout-all с новым входом. AppViewModelTest покрывает восстановление/повтор/новый вход, ProfileViewModelTest — подтверждение, ошибку и блокировку повторного выхода. Эти тесты используют MockEngine, а не живой сервер.
+Release APK не подписан: конфигурация ключа релиза не задана. `connectedDebugAndroidTest` требует устройство или эмулятор и запускает инструментальные тесты.
 
-Android-сценарии: `app/src/androidTest/.../AppNavigationTest.kt` — шесть потоков регистрации/доски/пространств/приглашений/планов/профиля/аккаунтов, восстановление Activity, видимость и геометрия overlay. Проверяется пересоздание открытых деталей/редактора, сохранение профиля и плана и отсутствие повторного возврата после пересоздания Activity. Helper сохраняет PNG в external files/screenshots; для выгрузки запускай instrumentation после установки APK и забирай файлы до удаления приложения Gradle. `DesignGalleryTest#galleryAllScreens` отдельно отрисовывает 28 состояний на автономных данных, сохраняет PNG в external files/gallery; это визуальная проверка, без pixel golden comparison.
+JVM-тесты в `androidApp/src/test/` проверяют аккаунты/нормализацию/пароли, пространства/роли/приглашения/последнего администратора, видимость/CRUD/отсоединение планов, повторения и даты, ViewModel/состояния завершения/черновик, сериализацию аргументов маршрутов и разные вхождения одной серии. Проверяются сохранность результата без UI, подтверждение ResultHandled и блокировка повторной операции до подтверждения. MockEngine-тесты RemoteAuth/Calendar/Workspace проверяют актуальные DTO, cookie, маршруты, фильтры, права и обработку ошибок API 2.0. RemoteSessionManagerTest проверяет объединение параллельных 401, ротацию при отмене coroutine, привязку refresh к серверу, согласованность пары access/refresh, отклонение ответа старой сессии и сериализацию logout-all с новым входом. AppViewModelTest покрывает восстановление/повтор/новый вход, ProfileViewModelTest — подтверждение, ошибку и блокировку повторного выхода. Эти тесты используют MockEngine, а не живой сервер.
+
+Android-сценарии: `androidApp/src/androidTest/.../AppNavigationTest.kt` — шесть потоков регистрации/доски/пространств/приглашений/планов/профиля/аккаунтов, восстановление Activity, видимость и геометрия overlay. Проверяется пересоздание открытых деталей/редактора, сохранение профиля и плана и отсутствие повторного возврата после пересоздания Activity. Helper сохраняет PNG в external files/screenshots; для выгрузки запускай instrumentation после установки APK и забирай файлы до удаления приложения Gradle. `DesignGalleryTest#galleryAllScreens` отдельно отрисовывает 28 состояний на автономных данных, сохраняет PNG в external files/gallery; это визуальная проверка, без pixel golden comparison.
 
 `CalendarPagerTest.kt` проверяет реальные свайпы всех четырёх pager, переходы вперёд/назад, выбор даты и режима, Today, восстановление после свайпа, конец февраля и независимость вертикальной прокрутки часов. CalendarPagerPeriodTest проверяет привязку дат к страницам и календарные границы; CalendarLoaderTest/CalendarViewModelTest — полное окно соседних месяцев, переиспользование данных и гонки загрузок.
 
@@ -149,26 +170,25 @@ Android-сценарии: `app/src/androidTest/.../AppNavigationTest.kt` — ш�
 
 Форматирование `.kt` и `.kts` выполняется штатным Reformat Code из Android Studio (у пользователя назначен на Ctrl+S). `.idea/codeStyles/` закрепляет `KOTLIN_OFFICIAL`; `.editorconfig` задаёт 4 пробела, 120 символов, trailing comma и явные импорты. Ktlint не используется для переформатирования, поскольку иначе расставляет переносы. Для [CLI-форматтера Studio](https://www.jetbrains.com/help/idea/command-line-formatter.html) укажи путь к установленной IDE в `ANDROID_STUDIO_HOME`:
 ```bash
-"$ANDROID_STUDIO_HOME/bin/format.sh" -s .idea/codeStyles/Project.xml -r -m '*.kt,*.kts' app/src core/ui/src build.gradle.kts settings.gradle.kts app/build.gradle.kts core/ui/build.gradle.kts
+"$ANDROID_STUDIO_HOME/bin/format.sh" -s .idea/codeStyles/Project.xml -r -m '*.kt,*.kts' androidApp/src core/ui/src build.gradle.kts settings.gradle.kts androidApp/build.gradle.kts core/ui/build.gradle.kts
 ```
 Для проверки без изменения файлов добавь `-d`; повторный запуск после форматирования должен завершаться без различий. Не форматируй исходники одновременно со сборкой или Lint.
 
-Корневой `.gitignore` исключает сборки и кеши всех модулей, локальные SDK/env/signing-файлы, персональные настройки Studio, логи и дампы. Gradle Wrapper, `.editorconfig`, `.idea/codeStyles/`, исходники и документация остаются доступными для коммита; примеры `.env.example`/`.env.sample`/`.env.template` разрешены. Правила проверяются через `git check-ignore --no-index -v`. Уже отслеживаемый `.idea/deploymentTargetSelector.xml` остаётся в индексе: `.gitignore` не прекращает отслеживание ранее добавленных файлов.
+Корневой `.gitignore` исключает сборки и кеши всех модулей, локальные SDK/env/signing-файлы, персональные настройки Studio, логи и дампы. Gradle Wrapper, `.editorconfig`, `.idea/codeStyles/`, исходники и документация остаются доступными для коммита; примеры `.env.example`/`.env.sample`/`.env.template` разрешены. Правила проверяются через `git check-ignore --no-index -v`. `.gitignore` не прекращает отслеживание ранее добавленных файлов; локальные IDE-файлы следует проверять отдельно от правил исключения.
 
 ## Выполненные проверки
 
-- Debug APK и APK инструментальных тестов собраны: `:app:assembleDebug`, `:app:assembleDebugAndroidTest`. Проверенная сборка использует текущий REST-режим из app/build.gradle.kts; UI-тесты календаря задают автономные данные без Hilt/сети.
-- `:app:testDebugUnitTest` и `:core:ui:testDebugUnitTest`: запущены 174 и 7 JVM-тестов соответственно, все прошли.
-- На временном эмуляторе Android 15 / API 35 запущены 8 CalendarPagerTest, 6 CalendarTimelineTest, 4 LazyCollectionsTest и 1 DesignGalleryTest: всего 19 Android-тестов, все прошли. Проверены четыре области горизонтального листания, Today/выбор даты и режима, восстановление после свайпа, конец февраля, независимость вертикальных жестов, геометрия часов и виртуализация длинных списков. Галерея отрисовала 28 состояний; день, неделя и месяц просмотрены вручную при 390 × 844 dp. Настоящие Keystore/DataStore и полная навигация дополнительно проверены предыдущим прогоном из 26 Android-тестов при интеграции API.
-- Для оформления полей входа/регистрации заново собраны `:app:assembleDebug` и `:app:assembleDebugAndroidTest`, затем запущен `DesignGalleryTest#galleryAllScreens`: 1 Android-тест прошёл, отрисованы 28 состояний. Вход и регистрация просмотрены вручную при 390 × 844 dp. Три изменённых Kotlin-файла прошли штатный formatter Studio в режиме `-d`; `git diff --check` прошёл. Новые автоматические тесты для смены цветов не добавлялись; JVM-тесты в этой визуальной правке повторно не запускались.
-- Логотип проверен в собранном Debug APK на временном эмуляторе: экран входа и круглый значок launcher просмотрены вручную, буквы и лупа не обрезаются. SHA-256 ресурса совпадает с исходным пользовательским PNG. Отдельные автоматические тесты для замены изображения не добавлялись и не запускались.
-- Android Lint: 0 ошибок, 71 предупреждение (преимущественно неиспользуемые ресурсы и сведения о версиях; также отсутствие отдельной монохромной маски логотипа).
-- Форматирование всех 255 Kotlin-файлов проверено штатным форматтером Android Studio 2026.1.2 в режиме `-d`; `git diff --check` прошёл. Отдельная проверка Gradle-скриптов сообщает Needs reformatting для неизменённого app/build.gradle.kts; форматтер не создаёт diff этого файла.
-- На `https://whobusy.ru/api/` с отдельным непривилегированным тестовым аккаунтом выполнены регистрация, чтение профиля/пространств/приглашений/настроек доски/планов, ротация refresh и logout с последующим 401. В настоящей сетевой Android-сборке проверены вход и восстановление после завершения процесса; файл DataStore содержит шифротекст без маркеров plaintext. Проверены отмена подтверждения logout-all, успешный выход, отказ обновления второй сессии (401) и сохранение гостевого состояния после перезапуска. Административные операции и мутации пространств на живом сервисе не проверялись; для них выполнены MockEngine-тесты и сверка исходников.
-- Путь каждого экрана в DESIGN_REFERENCE и локальные ссылки документации проверены. API-контракт сверен с 34 бизнес-маршрутами FunProject commit `f828103`; live OpenAPI/health доступны по `https://whobusy.ru/api/`. Backend-тесты не запускались.
+При настройке переноса в WhoBusy2 выполнены следующие проверки:
 
-Сборка AndroidTest APK сама по себе не запускает тесты. Последний фактический прогон: `adb -s emulator-5554 shell am instrument -w -e class com.project.whobusy.DesignGalleryTest#galleryAllScreens com.project.whobusy.test/androidx.test.runner.AndroidJUnitRunner`.
+- Собраны Debug APK, неподписанный Release APK и APK инструментальных тестов: `:androidApp:assembleDebug`, `:androidApp:assembleRelease`, `:androidApp:assembleDebugAndroidTest`.
+- `:androidApp:testDebugUnitTest` и `:core:ui:testDebugUnitTest`: запущены 174 и 7 JVM-тестов соответственно, все прошли.
+- Android Lint: 0 ошибок, 84 предупреждения.
+- Скомпилированы Android-цель `shared` и JavaScript/Wasm-цели `shared` и `webApp`.
+- Инструментальные тесты после переноса не запускались: сборка AndroidTest APK подтверждает только компиляцию.
+- Web-приложение и Android-экраны после переноса на устройстве вручную не проверялись.
+
+Прежние прогоны эмулятора, визуальные проверки 28 экранов, проверки форматтером и операции на живом API относятся к исходному Android-проекту WhoBusy. Их нельзя считать проверками текущего KMP-проекта. Дата и исходный backend snapshot, на котором основан API-контракт, сохранены в [API_CONTRACT.md](API_CONTRACT.md).
 
 ## Ограничения
 
-Моковые данные остаются в памяти; постоянный пользовательский кеш и offline CRUD не реализованы. В remote сохраняется только зашифрованный refresh, остальное повторно загружается с сервера. Нет исключений отдельного повторения и переноса существующего плана между пространствами. Текущая сборка использует REST (`useMockData = false` в app/build.gradle.kts); свойство переключения режима сейчас закомментировано. Старые методы выбора ownerIds и VisibilityRequestDTO сохранены для совместимости, из текущей навигации не используются; remote возвращает UnsupportedOperationException вместо обращений к отсутствующим маршрутам. Создание неактивного аккаунта выполняется POST → PATCH и не является одной серверной транзакцией.
+Моковые данные остаются в памяти; постоянный пользовательский кеш и offline CRUD не реализованы. В remote сохраняется только зашифрованный refresh, остальное повторно загружается с сервера. Нет исключений отдельного повторения и переноса существующего плана между пространствами. По умолчанию Android-сборка использует REST; `-PwhoBusy.useMockData=true` переключает все три репозитория в моковый режим. Web содержит только исходный пример и не подключён к предметным репозиториям. Старые методы выбора ownerIds и VisibilityRequestDTO сохранены для совместимости, из текущей навигации не используются; remote возвращает UnsupportedOperationException вместо обращений к отсутствующим маршрутам. Создание неактивного аккаунта выполняется POST → PATCH и не является одной серверной транзакцией.

@@ -1,0 +1,30 @@
+<resources>
+    <string name="desktop_my_board">Моя доска</string>
+    <string name="desktop_shared_board">Общая доска</string>
+    <string name="desktop_shared">Общая</string>
+    <string name="desktop_only_own">Только мои</string>
+    <string name="desktop_show">ПОКАЗЫВАТЬ</string>
+    <string name="desktop_own_plans">Мои планы</string>
+    <string name="desktop_create_plan">Создать план</string>
+    <string name="desktop_create_space">Создать пространство</string>
+    <string name="desktop_join_space">Вступить по ключу</string>
+    <string name="desktop_all_spaces">Все пространства</string>
+    <string name="desktop_space_members">%1$d участников · %2$s</string>
+    <string name="desktop_board_hint">Всё в одной доске</string>
+    <string name="desktop_board_hint_body">Выберите пространства.\nПланы появятся без дублей.</string>
+    <string name="desktop_brand_caption">Планы, люди, пространства</string>
+    <string name="desktop_no_spaces">У вас пока нет пространств</string>
+    <string name="desktop_previous_period">Предыдущий период</string>
+    <string name="desktop_next_period">Следующий период</string>
+    <string name="desktop_previous_month">Предыдущий месяц</string>
+    <string name="desktop_next_month">Следующий месяц</string>
+    <string name="desktop_refresh">Обновить доску</string>
+    <string name="desktop_close_details">Закрыть подробности</string>
+    <string name="desktop_day_plans">Планы на %1$s</string>
+    <string name="desktop_no_day_plans">На этот день планов пока нет</string>
+    <string name="desktop_more_events">Ещё %1$d</string>
+    <string name="desktop_plan">План</string>
+    <string name="desktop_filter_space">Показывать %1$s</string>
+    <string name="desktop_open_space">Открыть %1$s</string>
+    <string name="desktop_board_empty">Выберите пространства или включите свои планы</string>
+</resources>

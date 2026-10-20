@@ -1,13 +1,21 @@
 package com.project.whobusy.presentation
 
 import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.viewModelScope
 import com.project.whobusy.data.mock.DemoAccount
+import com.project.whobusy.data.mock.MockAccountStore
+import com.project.whobusy.data.mock.MockAuthRepository
+import com.project.whobusy.data.mock.MockCalendarRepository
+import com.project.whobusy.data.mock.MockWorkspaceRepository
+import com.project.whobusy.data.session.SessionStore
+import com.project.whobusy.domain.model.BoardSettings
 import com.project.whobusy.domain.model.CalendarEvent
 import com.project.whobusy.domain.model.CalendarQuery
 import com.project.whobusy.domain.model.CalendarUser
 import com.project.whobusy.domain.model.EventDraft
 import com.project.whobusy.domain.repository.AuthRepository
 import com.project.whobusy.domain.repository.CalendarRepository
+import com.project.whobusy.domain.repository.WorkspaceRepository
 import com.project.whobusy.presentation.calendar.model.CalendarMode
 import com.project.whobusy.presentation.calendar.model.monthDates
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
@@ -30,8 +38,10 @@ import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.ExperimentalCoroutinesApi
 import kotlinx.coroutines.NonCancellable
+import kotlinx.coroutines.cancelAndJoin
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.first
+import kotlinx.coroutines.job
 import kotlinx.coroutines.test.StandardTestDispatcher
 import kotlinx.coroutines.test.advanceUntilIdle
 import kotlinx.coroutines.test.resetMain
@@ -67,6 +77,73 @@ class CalendarViewModelTest {
     fun tearDown() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun desktopBoardFiltersPersistAndReloadTheVisibleEvents() =
+        runTest {
+            val session = SessionStore()
+            val accounts = MockAccountStore()
+            val auth = MockAuthRepository(session, accounts)
+            auth.login("demo", DemoAccount.PASSWORD).getOrThrow()
+            val workspace = MockWorkspaceRepository(session, accounts, clock)
+            val repository = MockCalendarRepository(session, clock, workspace, accounts)
+            val viewModel = CalendarViewModel(
+                repository, auth, CalendarLoader(repository, auth, workspace), clock, SavedStateHandle(),
+            )
+            try {
+                viewModel.state.first { !it.isLoading }
+                val settings = BoardSettings(emptySet(), showOwn = false)
+
+                viewModel.onEvent(CalendarCommand.UpdateBoardSettings(settings))
+                assertTrue(viewModel.state.value.isSaving)
+                val state = viewModel.state.first { !it.isLoading && !it.isSaving }
+
+                assertEquals(settings, workspace.getBoardSettings().getOrThrow())
+                assertEquals(settings, state.boardSettings)
+                assertTrue(state.events.isEmpty())
+                assertNull(state.result)
+                assertNull(state.error)
+            } finally {
+                viewModel.viewModelScope.coroutineContext.job.cancelAndJoin()
+            }
+        }
+
+    @Test
+    fun failedDesktopBoardFilterSaveKeepsThePreviousSettingsAndAllowsRetry() =
+        runTest {
+            val session = SessionStore()
+            val accounts = MockAccountStore()
+            val auth = MockAuthRepository(session, accounts)
+            auth.login("demo", DemoAccount.PASSWORD).getOrThrow()
+            val delegate = MockWorkspaceRepository(session, accounts, clock)
+            var failSave = true
+            val workspace = object : WorkspaceRepository by delegate {
+                override suspend fun saveBoardSettings(settings: BoardSettings): Result<BoardSettings> =
+                    if (failSave) Result.failure(IllegalStateException("Unavailable")) else delegate.saveBoardSettings(settings)
+            }
+            val repository = MockCalendarRepository(session, clock, delegate, accounts)
+            val viewModel = CalendarViewModel(
+                repository, auth, CalendarLoader(repository, auth, workspace), clock, SavedStateHandle(),
+            )
+            try {
+                val previous = viewModel.state.first { !it.isLoading }.boardSettings
+                val settings = BoardSettings(emptySet(), showOwn = false)
+
+                viewModel.onEvent(CalendarCommand.UpdateBoardSettings(settings))
+                val failed = viewModel.state.first { !it.isLoading && !it.isSaving }
+
+                assertEquals(previous, failed.boardSettings)
+                assertNotNull(failed.error)
+                failSave = false
+                viewModel.onEvent(CalendarCommand.UpdateBoardSettings(settings))
+                val saved = viewModel.state.first { !it.isLoading && !it.isSaving }
+
+                assertEquals(settings, saved.boardSettings)
+                assertNull(saved.error)
+            } finally {
+                viewModel.viewModelScope.coroutineContext.job.cancelAndJoin()
+            }
+        }
 
     @Test
     fun cachesDistinctOccurrencesWithoutChangingCalendarState() =

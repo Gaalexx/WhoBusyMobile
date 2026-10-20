@@ -28,6 +28,10 @@ class CalendarLoader(
     private val auth: AuthRepository,
     private val workspace: WorkspaceRepository? = null,
 ) {
+    suspend fun saveBoardSettings(settings: BoardSettings) {
+        checkNotNull(workspace).saveBoardSettings(settings).getOrThrow()
+    }
+
     suspend fun load(date: LocalDate): CalendarState {
         val user = auth.currentUser.first()
         val range = calendarLoadRange(date)

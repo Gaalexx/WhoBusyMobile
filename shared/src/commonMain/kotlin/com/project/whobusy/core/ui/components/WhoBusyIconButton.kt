@@ -24,8 +24,9 @@ fun WhoBusyIconButton(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
     tint: Color = MaterialTheme.colorScheme.primary,
+    enabled: Boolean = true,
 ) {
-    IconButton(onClick, modifier.size(48.dp)) {
+    IconButton(onClick, modifier.size(48.dp), enabled = enabled) {
         WhoBusyIcon(icon, description, tint = tint)
     }
 }

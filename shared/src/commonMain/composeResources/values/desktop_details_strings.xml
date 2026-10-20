@@ -1,0 +1,28 @@
+<resources>
+    <string name="desktop_space_summary">Пространство · %1$d участников · %2$s</string>
+    <string name="desktop_space_choose">Выберите пространство</string>
+    <string name="desktop_space_choose_body">Участники, приглашения и настройки — в одном месте.</string>
+    <string name="desktop_space_board">Открыть доску</string>
+    <string name="desktop_space_member">Участник</string>
+    <string name="desktop_space_role">Роль</string>
+    <string name="desktop_space_settings">Настройки</string>
+    <string name="desktop_space_people">Ваши люди — рядом</string>
+    <string name="desktop_space_people_body">У каждого пространства свои планы и роли участников.</string>
+    <string name="desktop_space_tagline">Планы, люди, пространства</string>
+    <string name="desktop_space_role_notice">Роль действует только здесь</string>
+    <string name="desktop_space_role_notice_body">В других пространствах права участников не изменяются.</string>
+    <string name="desktop_space_access_notice">Доступ после принятия</string>
+    <string name="desktop_space_access_notice_body">Пользователь сможет принять или отклонить приглашение.</string>
+    <string name="desktop_space_no_members">Участники пока не загружены</string>
+    <string name="desktop_space_no_pending">Нет приглашений, ожидающих ответа</string>
+    <string name="desktop_editor_details">Детали плана</string>
+    <string name="desktop_editor_subtitle">Личный план · видимость для каждого пространства</string>
+    <string name="desktop_editor_placement">ГДЕ СОЗДАТЬ</string>
+    <string name="desktop_editor_in_space">В пространстве</string>
+    <string name="desktop_editor_series_notice">Изменения повторяющегося плана применяются ко всей серии.</string>
+    <string name="desktop_editor_visibility_hint">Выберите доступ в каждом пространстве.</string>
+    <string name="desktop_editor_default_title">По умолчанию — только занятость</string>
+    <string name="desktop_editor_default_body">Новый личный план передаёт время занятости во все ваши пространства.</string>
+    <string name="desktop_editor_public_hint">Чтобы показать план всем участникам, создайте его внутри пространства.</string>
+    <string name="desktop_editor_busy">Подождите завершения операции</string>
+</resources>

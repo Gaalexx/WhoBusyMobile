@@ -8,6 +8,7 @@ import androidx.compose.runtime.rememberUpdatedState
 import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.text.AnnotatedString
 import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import com.project.whobusy.presentation.desktop.ui.DesktopSpacesScreen
 import com.project.whobusy.presentation.platform.PlatformBackHandler
 import com.project.whobusy.presentation.spaces.viewmodel.SpacesCommand
 import com.project.whobusy.presentation.spaces.viewmodel.SpacesEffect
@@ -21,8 +22,20 @@ fun SpacesRoot(
     onJoin: () -> Unit,
     onInvitations: () -> Unit,
     viewModel: SpacesViewModel = metroViewModel(),
+    desktopLayout: Boolean = false,
 ) {
     LaunchedEffect(viewModel) { viewModel.onEvent(SpacesCommand.Load()) }
+    if (desktopLayout) {
+        DesktopSpacesScreen(
+            viewModel.state.collectAsStateWithLifecycle().value,
+            viewModel::onEvent,
+            onOpenSpace,
+            onCreate,
+            onJoin,
+            onInvitations,
+        )
+        return
+    }
     SpacesScreen(viewModel.state.collectAsStateWithLifecycle().value, onOpenSpace, onCreate, onJoin, onInvitations)
 }
 

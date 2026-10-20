@@ -7,6 +7,7 @@ import com.project.whobusy.data.mock.MockAuthRepository
 import com.project.whobusy.data.mock.MockCalendarRepository
 import com.project.whobusy.data.mock.MockWorkspaceRepository
 import com.project.whobusy.data.session.SessionStore
+import com.project.whobusy.domain.model.BoardSettings
 import com.project.whobusy.domain.model.CalendarQuery
 import com.project.whobusy.domain.model.EventShare
 import com.project.whobusy.domain.model.EventVisibility
@@ -57,6 +58,36 @@ class EventEditorViewModelTest {
     fun after() {
         Dispatchers.resetMain()
     }
+
+    @Test
+    fun initializedDraftRemainsAvailableWhenBoardFiltersHideTheOriginalPlan() =
+        runTest {
+            auth.login(DemoAccount.EMAIL, DemoAccount.PASSWORD).getOrThrow()
+            val original = calendar.getEvents(query()).getOrThrow().first { it.id == 1 }
+            val saved = SavedStateHandle()
+            val editor = editor(saved)
+            editor.start(date.toString(), original, null)
+            advanceUntilIdle()
+            editor.onEvent(EditorCommand.Title("Незавершённый черновик"))
+            workspace.saveBoardSettings(BoardSettings(emptySet(), showOwn = false)).getOrThrow()
+
+            assertTrue(calendar.getEvents(query()).getOrThrow().isEmpty())
+            assertTrue(editor.isStarted(date.toString(), original.id, null))
+            assertFalse(editor.isStarted(date.plusDays(1).toString(), original.id, null))
+            assertFalse(editor.isStarted(date.toString(), original.id + 1, null))
+            assertFalse(editor.isStarted(date.toString(), original.id, 1))
+            editor.start(date.toString(), original.copy(title = "Серверное название"), null)
+            advanceUntilIdle()
+            assertEquals("Незавершённый черновик", editor.state.value.form.title)
+
+            val recreated = editor(saved)
+            recreated.start(date.toString(), original, null)
+            advanceUntilIdle()
+            assertTrue(recreated.isStarted(date.toString(), original.id, null))
+            assertEquals(editor.state.value.form, recreated.state.value.form)
+            recreated.reset()
+            assertFalse(recreated.isStarted(date.toString(), original.id, null))
+        }
 
     @Test
     fun newPersonalPlanDefaultsToBusyAndSpacePlanDropsShares() =

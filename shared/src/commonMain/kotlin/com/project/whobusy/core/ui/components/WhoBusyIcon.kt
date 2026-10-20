@@ -6,8 +6,12 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Add
 import androidx.compose.material.icons.filled.CalendarMonth
+import androidx.compose.material.icons.filled.ChevronLeft
+import androidx.compose.material.icons.filled.ChevronRight
 import androidx.compose.material.icons.filled.Check
+import androidx.compose.material.icons.filled.Close
 import androidx.compose.material.icons.filled.Edit
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material.icons.filled.FilterList
 import androidx.compose.material.icons.filled.Key
 import androidx.compose.material.icons.filled.Lock
@@ -15,6 +19,8 @@ import androidx.compose.material.icons.filled.Mail
 import androidx.compose.material.icons.filled.MoreVert
 import androidx.compose.material.icons.filled.People
 import androidx.compose.material.icons.filled.Person
+import androidx.compose.material.icons.filled.Refresh
+import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.runtime.Composable
@@ -41,6 +47,12 @@ enum class UiIcon(
     Key(Icons.Filled.Key),
     Mail(Icons.Filled.Mail),
     Lock(Icons.Filled.Lock),
+    Previous(Icons.Filled.ChevronLeft),
+    Next(Icons.Filled.ChevronRight),
+    Close(Icons.Filled.Close),
+    Refresh(Icons.Filled.Refresh),
+    Settings(Icons.Filled.Settings),
+    ExpandMore(Icons.Filled.ExpandMore),
 }
 
 @Composable

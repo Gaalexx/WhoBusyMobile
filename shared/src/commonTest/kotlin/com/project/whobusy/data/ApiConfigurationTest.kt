@@ -7,6 +7,23 @@ import kotlin.test.assertFailsWith
 
 class ApiConfigurationTest {
     @Test
+    fun loopbackHttpIsAllowedOnlyWithExplicitWebOptIn() {
+        listOf("localhost", "127.0.0.1", "[::1]").forEach { host ->
+            val baseUrl = "http://$host:8080/api/"
+            assertFailsWith<IllegalArgumentException> { ApiConfiguration(baseUrl).endpoint("health") }
+            assertEquals(
+                baseUrl + "health",
+                ApiConfiguration(baseUrl, allowLocalhostHttp = true).endpoint("health"),
+            )
+        }
+        listOf("localhost.example.test", "192.168.1.2", "whobusy.ru").forEach { host ->
+            assertFailsWith<IllegalArgumentException> {
+                ApiConfiguration("http://$host/api/", allowLocalhostHttp = true).endpoint("health")
+            }
+        }
+    }
+
+    @Test
     fun joinsApiPathWithoutDuplicateSlashes() {
         assertEquals(
             "https://calendar.example.test/api/auth/login",

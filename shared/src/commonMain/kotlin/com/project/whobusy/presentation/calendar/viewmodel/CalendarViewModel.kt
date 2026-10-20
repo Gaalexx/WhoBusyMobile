@@ -82,6 +82,10 @@ class CalendarViewModel(
 
     fun onEvent(command: CalendarCommand) {
         when (command) {
+            is CalendarCommand.UpdateBoardSettings -> mutate {
+                loader.saveBoardSettings(command.settings)
+            }
+
             is CalendarCommand.SelectDate -> selectDate(command.date)
             is CalendarCommand.SelectMode -> {
                 savedState["mode"] = command.mode.name

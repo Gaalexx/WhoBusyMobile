@@ -5,16 +5,20 @@ import io.ktor.http.Url
 
 data class ApiConfiguration(
     val baseUrl: String,
+    val allowLocalhostHttp: Boolean = false,
 ) {
     fun endpoint(path: String): String {
         require(
-            baseUrl.startsWith("https://") && baseUrl.none(Char::isWhitespace) &&
-                baseUrl.removePrefix("https://").takeWhile { it !in "/?#" }.isNotEmpty(),
+            (baseUrl.startsWith("https://") || allowLocalhostHttp && baseUrl.startsWith("http://")) &&
+                baseUrl.none(Char::isWhitespace) &&
+                baseUrl.substringAfter("://").takeWhile { it !in "/?#" }.isNotEmpty(),
         ) {
             "Set whoBusy.apiBaseUrl to the HTTPS API base URL"
         }
         val url = Url(baseUrl)
-        require(url.protocol == URLProtocol.HTTPS && url.host.isNotBlank()) {
+        val localhostHttp = allowLocalhostHttp && url.protocol == URLProtocol.HTTP &&
+            url.host.lowercase() in setOf("localhost", "127.0.0.1", "::1", "[::1]")
+        require((url.protocol == URLProtocol.HTTPS || localhostHttp) && url.host.isNotBlank()) {
             "Set whoBusy.apiBaseUrl to the HTTPS API base URL"
         }
         require('?' !in baseUrl && '#' !in baseUrl && url.user == null && url.password == null) {

@@ -1,0 +1,3 @@
+<resources>
+    <string name="web_demo_notice">Демо-режим: данные только в памяти, запросы к серверу отключены</string>
+</resources>

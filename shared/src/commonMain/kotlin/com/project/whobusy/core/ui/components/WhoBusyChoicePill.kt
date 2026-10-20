@@ -29,6 +29,7 @@ fun WhoBusyChoicePill(
     selected: Boolean,
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
+    enabled: Boolean = true,
 ) {
     val shape = RoundedCornerShape(14.dp)
     Surface(
@@ -39,7 +40,7 @@ fun WhoBusyChoicePill(
         Box(
             Modifier
                 .heightIn(min = 28.dp)
-                .selectable(selected, role = Role.RadioButton, onClick = onClick)
+                .selectable(selected, enabled = enabled, role = Role.RadioButton, onClick = onClick)
                 .padding(horizontal = 12.dp, vertical = 5.dp),
             contentAlignment = Alignment.Center,
         ) {

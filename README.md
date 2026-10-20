@@ -2,7 +2,7 @@
 
 Доска планов и занятости по пространствам на Kotlin Multiplatform, Compose Multiplatform, Ktor Client, Metro DI и Navigation 3.
 
-Общий интерфейс реализует [28 экранов Figma](https://www.figma.com/design/dDatbSFzoHbGIn2PWUqZnx?node-id=14-90): вход и регистрацию, доску день/неделя/месяц, пространства, приглашения и роли, личные и пространственные планы, повторения и профиль. Дополнительно доступно управление аккаунтами глобальным администратором.
+Общий интерфейс реализует [28 экранов Figma](https://www.figma.com/design/dDatbSFzoHbGIn2PWUqZnx?node-id=14-90): вход и регистрацию, доску день/неделя/месяц, пространства, приглашения и роли, личные и пространственные планы, повторения и профиль. На широком Web применяется отдельная desktop-компоновка по [WhoBusy-Desktop-Board.svg](docs/design/WhoBusy-Desktop-Board.svg): боковая навигация и пространства, календарь с подробностями, участники и редактор плана. Дополнительно доступно управление аккаунтами глобальным администратором.
 
 ## Структура
 
@@ -10,15 +10,16 @@
 - `shared/src/commonMain/composeResources/` — общие строки, изображения и архив оформления; доступ через Compose Resources.
 - `shared/src/androidMain/` — OkHttp, Android Keystore/DataStore, платформенная блокировка моков и BackHandler.
 - `androidApp` — Android-host `com.project.whobusy`: Application, Activity, системные панели и AppGraph; BuildConfig передаётся общему CalendarModule через AppConfiguration для выбора REST/demo.
-- `webApp` — браузерная точка входа для JavaScript и Wasm, запускает общий интерфейс с `DemoAppGraph` и моками в памяти.
+- `shared/src/webMain/` — браузерный Metro-граф и Ktor HTTP-фабрика; JS/Wasm-адаптеры включают отправку HttpOnly cookie через Fetch credentials.
+- `webApp` — браузерная точка входа для JavaScript и Wasm, build-конфигурация и dev-server API proxy; по умолчанию использует REST.
 
-Отдельного модуля `core:ui` и исходного демонстрационного Greeting больше нет. Android и Web используют одни экраны, состояния, модели и расчёты. iOS и desktop цели пока не настроены.
+Отдельного модуля `core:ui` и исходного демонстрационного Greeting больше нет. Android и Web используют общие состояния, модели и расчёты; desktop-компоновка включается только для широкого браузера, Android и узкий Web сохраняют мобильный UI. Нативные iOS и desktop цели пока не настроены.
 
 Metro 1.4.5 подключён Kotlin compiler plugin без KSP и Dagger/Hilt. Обычные ViewModel регистрируются в общем графе; календарь и редактор получают `SavedStateHandle` через assisted-фабрики. Сохранены области ViewModel в пределах сессии и результатов операций в StateFlow до `ResultHandled`.
 
 Даты используют `kotlinx.datetime` и `kotlin.time`. Пакет `time` даёт совместимые операции календаря, Clock и форматирование существующих русских шаблонов. Расчёты повторений сохраняют локальное время без привязки к часовому поясу.
 
-Для REST в браузере ещё нужен auth/HTTP-адаптер: текущий native-клиент читает `Set-Cookie` и задаёт `Cookie` вручную. Браузер должен сам хранить HttpOnly refresh-cookie и отправлять её с credentials при подходящих CORS/SameSite. Web сейчас работает только с demo-данными; история браузера и его Back ещё не подключены. Подробности платформенных границ — в [карте проекта](docs/AGENT_MAP.md#границы-мультиплатформенности).
+В браузере access остаётся только в памяти, refresh хранится браузером в HttpOnly cookie; клиент не читает `Set-Cookie` и не задаёт `Cookie` вручную. По умолчанию API доступен через `/api/` того же origin, чтобы сохранить backend `SameSite=Strict` без third-party cookie. История браузера и его Back ещё не подключены. Подробности платформенных границ — в [карте проекта](docs/AGENT_MAP.md#границы-мультиплатформенности).
 
 Версии зависимостей: `gradle/libs.versions.toml`. Для ИИ-агентов: [инструкции](AGENTS.md), [карта проекта](docs/AGENT_MAP.md), [источник дизайна](docs/DESIGN_REFERENCE.md).
 
@@ -50,6 +51,16 @@ Debug APK: `androidApp/build/outputs/apk/debug/androidApp-debug.apk`. Release AP
 ./gradlew :webApp:wasmJsBrowserDevelopmentRun
 ```
 
+Обе Web-версии используют Skiko и требуют доступный WebGL2-контекст; переключение JavaScript/Wasm это требование не меняет. Программный/HTML fallback интерфейса не реализован.
+
+Dev-server проксирует `/api` на `https://whobusy.ru`, сохраняя browser credentials и HttpOnly/Secure/SameSite cookie. Для другого backend origin:
+
+```bash
+WHOBUSY_API_PROXY_TARGET=https://example.com ./gradlew :webApp:jsBrowserDevelopmentRun
+```
+
+Это HTTPS origin без `/api`, credentials, query и fragment. Для локального dev-server разрешён HTTP только на loopback-хосте; Android и внешний API по-прежнему требуют HTTPS.
+
 ## Источники данных
 
 Android по умолчанию использует реальный API: `whoBusy.useMockData=false`, `whoBusy.apiBaseUrl=https://whobusy.ru/api/`. Для демонстрационной сборки:
@@ -64,7 +75,18 @@ Android по умолчанию использует реальный API: `whoB
 ./gradlew :androidApp:assembleDebug -PwhoBusy.apiBaseUrl=https://example.com/api/
 ```
 
-Эти свойства также можно задать в пользовательском `~/.gradle/gradle.properties`; они относятся к Android-графу. Web использует общий demo-граф и не обращается к API.
+Эти свойства также можно задать в пользовательском `~/.gradle/gradle.properties`; они относятся к Android-графу. У Web отдельные свойства:
+
+```bash
+# По умолчанию REST через /api/ текущего origin:
+./gradlew :webApp:jsBrowserDevelopmentRun
+# Явный demo без сетевых запросов:
+./gradlew :webApp:jsBrowserDevelopmentRun -PwhoBusy.web.useMockData=true
+# Необязательный отдельный API URL:
+./gradlew :webApp:jsBrowserDevelopmentRun -PwhoBusy.web.apiBaseUrl=https://example.com/api/
+```
+
+При ошибке REST приложение показывает ошибку/повтор и не подменяет серверные данные моками. Отдельный API origin требует согласованных credentialed CORS и cookie-политики backend; одного URL недостаточно. Штатный backend с `SameSite=Strict` рассчитан на same-site размещение.
 
 В demo-режиме поля входа заполнены: `demo@whobusy.test` / `demo1234` (также логин `demo`). Глобальный администратор: `admin` / `admin123`. Остальные демоаккаунты имеют пароль `demo1234`. В удалённом режиме демологин не заполняется.
 
@@ -76,6 +98,31 @@ Android по умолчанию использует реальный API: `whoB
 
 Общие `RemoteAuthRepository`, `RemoteWorkspaceRepository` и `RemoteCalendarRepository` реализуют REST-контракт. На Android `RemoteSessionManager` управляет обновлением и восстановлением сессии: access и профиль находятся в памяти, refresh хранится зашифрованным через Android Keystore/DataStore в каталоге без backup. Ротация фиксируется до публикации новой сессии; параллельные 401 объединяются в одно обновление, защищённый запрос повторяется один раз.
 
-Обычный выход очищает локальную сессию до возврата ко входу; серверный отзыв выполняется в фоне и остаётся best effort. Выход на всех устройствах требует подтверждения успешного ответа сервера. Аварийное завершение между серверной ротацией и сохранением refresh после истечения grace может потребовать нового входа.
+На Android обычный выход очищает локальную сессию до возврата ко входу; серверный отзыв выполняется в фоне и остаётся best effort. В браузере обычный выход ждёт успешного ответа сервера, поскольку JavaScript не может удалить HttpOnly cookie; при сетевой ошибке сессия сохраняется для повтора. Выход на всех устройствах требует подтверждения успешного ответа сервера на обеих платформах. Аварийное завершение между серверной ротацией и сохранением native refresh после истечения grace может потребовать нового входа.
 
 Повторения поддерживают ежедневный режим, будни, недели, месяцы и годы, включая `INTERVAL`, `COUNT` и `UNTIL` для используемого подмножества RRULE. Изменения/удаление относятся ко всей серии. Исключения отдельных вхождений, постоянный локальный кеш планов и offline CRUD не реализованы. Форматирование дат пока рассчитано на русский интерфейс.
+
+## Размещение Web
+
+Собирай и публикуй всю browser distribution, а не один `.js`: ей нужны HTML, Compose Resources, шрифты и Wasm/Skiko-файлы.
+
+```bash
+./gradlew :webApp:jsBrowserDistribution :webApp:wasmJsBrowserDistribution
+```
+
+Результаты — `webApp/build/dist/{js,wasmJs}/productionExecutable/`. Выбери одну distribution и размести её целиком на HTTPS-хостинге. Для nginx сохрани `/api/` за same-origin reverse proxy, а статику обслуживай с SPA fallback. Пример фрагмента существующего HTTPS server block для FastAPI на `127.0.0.1:8000`:
+
+```nginx
+root /srv/whobusy-web;
+location /api/ {
+    proxy_pass http://127.0.0.1:8000/;
+    proxy_set_header Host $host;
+    proxy_set_header X-Forwarded-Proto $scheme;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+}
+location / {
+    try_files $uri $uri/ /index.html;
+}
+```
+
+Cookie path должен оставаться `/api/auth`; не удаляй HttpOnly/Secure/SameSite. CORS не заменяет маршрутизацию API и не делает localhost same-site с `whobusy.ru`. Проверка живого `GET /api/health` подтверждает доступность сервера, но не успешный вход или CRUD — результаты проверок отдельно в карте проекта.

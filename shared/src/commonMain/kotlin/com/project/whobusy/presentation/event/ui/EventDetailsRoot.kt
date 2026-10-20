@@ -8,6 +8,7 @@ import androidx.lifecycle.compose.collectAsStateWithLifecycle
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarEffect
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarViewModel
+import com.project.whobusy.presentation.desktop.ui.DesktopPlanDetailsScreen
 
 @Composable
 fun EventDetailsRoot(
@@ -17,6 +18,7 @@ fun EventDetailsRoot(
     onEdit: () -> Unit,
     onDeleted: () -> Unit,
     viewModel: CalendarViewModel,
+    desktopLayout: Boolean = false,
 ) {
     val state by viewModel.state.collectAsStateWithLifecycle()
     val currentOnDeleted by rememberUpdatedState(onDeleted)
@@ -38,14 +40,26 @@ fun EventDetailsRoot(
         }
         return
     }
-    EventDetailsScreen(
-        event = event,
-        canEdit = event.canEdit,
-        onBack = guardedOnBack,
-        onEdit = { if (canNavigate()) onEdit() },
-        onDelete = { viewModel.onEvent(CalendarCommand.DeleteEvent(eventId)) },
-        saving = state.isSaving,
-        error = state.error,
-        spaces = state.spaces,
-    )
+    if (desktopLayout) {
+        DesktopPlanDetailsScreen(
+            event = event,
+            onBack = guardedOnBack,
+            onEdit = { if (canNavigate()) onEdit() },
+            onDelete = { viewModel.onEvent(CalendarCommand.DeleteEvent(eventId)) },
+            saving = state.isSaving,
+            error = state.error,
+            spaces = state.spaces,
+        )
+    } else {
+        EventDetailsScreen(
+            event = event,
+            canEdit = event.canEdit,
+            onBack = guardedOnBack,
+            onEdit = { if (canNavigate()) onEdit() },
+            onDelete = { viewModel.onEvent(CalendarCommand.DeleteEvent(eventId)) },
+            saving = state.isSaving,
+            error = state.error,
+            spaces = state.spaces,
+        )
+    }
 }

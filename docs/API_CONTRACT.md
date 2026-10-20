@@ -224,12 +224,56 @@ refresh после перезагрузки страницы и синхрони
 `BroadcastChannel`. В Android обменом и хранением управляет описанный нативный слой.
 В WhoBusy2 модели, REST-репозитории, ViewModel и интерфейс находятся в
 `shared/src/commonMain/kotlin/com/project/whobusy/`; Android HTTP/Keystore/DataStore — в
-`shared/src/androidMain/`, общий `di/CalendarModule.kt` получает `AppConfiguration` из Android-графа.
-`webApp` запускает тот же интерфейс с `DemoAppGraph` и моками в памяти. Серверная
-авторизация для него пока не подключена: native-схему ручного Cookie/Set-Cookie нельзя
-использовать из JavaScript браузера. Нужен отдельный browser HTTP/auth-адаптер с
-credentials, HttpOnly refresh-cookie и согласованными CORS, SameSite, Secure и Path.
-Refresh не должен становиться доступен JavaScript или сохраняться в localStorage.
+`shared/src/androidMain/`, общий `di/CalendarModule.kt` получает `AppConfiguration` из платформенного графа.
+
+### Обработка в браузере WhoBusy2
+
+`shared/src/webMain/.../di/WebAppGraph.kt` использует те же RemoteAuthRepository,
+RemoteWorkspaceRepository, RemoteCalendarRepository и RemoteSessionManager. По умолчанию
+Web работает с REST, а не с DemoAppGraph. `BrowserHttpClientFactory` и JS/Wasm engine
+отправляют Fetch с `credentials=include`, `redirect=error`, `cache=no-store`.
+RefreshCookiePolicy разделяет native и browser transport: NativeRefreshCookies читает
+Set-Cookie и задаёт Cookie; BrowserRefreshCookies не обращается к этим запрещённым
+заголовкам. Успешный Token JSON проверяется независимо от доступности Set-Cookie.
+
+Браузер сам принимает/вращает HttpOnly refresh-cookie и отправляет её согласно
+SameSite/Secure/Path, в том числе на PATCH профиля для сохранения текущей семьи при
+смене пароля. Access и профиль находятся только в SessionStore в памяти; refresh
+не читается JavaScript и не сохраняется в localStorage/sessionStorage. Инъекция
+BrowserRefreshTokenStore служит guard: обращение к его read/write/clear — ошибка,
+а не альтернативное хранилище секрета. После перезагрузки страницы restore сразу
+вызывает POST auth/refresh с browser cookie; 401 означает гостя, временная ошибка —
+восстановление с возможностью повтора. Общий Mutex/version объединяет параллельные
+401 внутри экземпляра графа. После каждого browser refresh профиль заново загружается
+через auth/me: другая вкладка могла заменить общую HttpOnly cookie входом в другой
+аккаунт. При смене user ID увеличивается generation и публикуется согласованная новая
+сессия, но операция старого пользователя отменяется через CancellationException без
+первого выполнения/повтора с чужим access. Устаревшие browser leases тоже отменяются,
+а не попадают в обработчик AuthenticationException, способный вызвать logout новой
+сессии из старого экрана. BroadcastChannel и немедленная синхронизация вкладок
+не реализованы.
+
+Browser logout дожидается POST auth/logout и серверного Set-Cookie удаления прежде,
+чем публикует гостя. При сетевой/серверной ошибке сессия сохраняется и показывается
+ошибка для повтора: JavaScript не может гарантированно удалить HttpOnly cookie.
+Logout-all также очищает память только после подтверждения сервера. Native durable
+storage и его best-effort обычный logout не изменены.
+
+Штатный Web API URL — `/api/` текущего origin. Dev-server проксирует его на
+`https://whobusy.ru`; `WHOBUSY_API_PROXY_TARGET=https://<host>` меняет HTTPS origin
+без path/query/credentials. Production static hosting должен иметь same-origin
+reverse proxy с подходящим `REFRESH_COOKIE_PATH=/api/auth`, не снимающий
+HttpOnly/Secure/SameSite. В Web-конфигурации отдельно разрешён HTTP loopback
+для dev-server; Android и внешний API остаются HTTPS-only.
+
+`-PwhoBusy.web.apiBaseUrl=https://<host>/api/` явно задаёт отдельный URL, но не
+устраняет CORS или cookie-политику. Для credentialed cross-origin нужны конкретный
+разрешённый Origin и Access-Control-Allow-Credentials; wildcard Origin недостаточен.
+SameSite=Strict не становится cross-site от credentials include. 20.10.2026 GET
+`https://whobusy.ru/api/health` вернул 200, а OPTIONS auth/login с
+`Origin: http://localhost:8080` — 400 `Disallowed CORS origin`. Эти безопасные
+пробы подтверждают доступность/ограничение CORS, но не успешный вход или CRUD.
+Развёртывание distribution и nginx-пример описаны в README.
 
 ## Доска
 
@@ -377,7 +421,7 @@ Backend хранит RRULE как строку, не разворачивает 
 предпочтением модератора); пространство без участников удаляется. Endpoint не
 предоставляет просмотр чужих планов глобальному администратору.
 
-## Android: моки и подключение
+## Источники данных и подключение
 
 По умолчанию Android-приложение использует REST. `-PwhoBusy.useMockData=true`
 включает моковый источник без сетевых запросов. Данные сессии,
@@ -401,7 +445,7 @@ Backend хранит RRULE как строку, не разворачивает 
 использует `RemoteSessionManager`; legacy-методы выбора ownerIds не вызывают удалённые
 маршруты и возвращают ошибку неподдерживаемой операции.
 
-В Android-графе `USE_MOCK_DATA` по умолчанию `false`: Auth/Workspace/Calendar используют remote. Web использует только `DemoAppGraph` с моками; Android-свойства не включают REST в браузере.
+В Android-графе `USE_MOCK_DATA` по умолчанию `false`: Auth/Workspace/Calendar используют remote. Web независимо по умолчанию использует remote через WebAppGraph; Android-свойства не переключают браузерный источник. Явный `-PwhoBusy.web.useMockData=true` согласованно включает Web demo без сети; автоматического fallback к мокам при ошибке REST нет.
 `-PwhoBusy.useMockData=true` переключает сразу все три репозитория на моки.
 `-PwhoBusy.useMockData=false` явно выбирает REST, без смешивания с моковыми пространствами. Базовый
 URL по умолчанию — `https://whobusy.ru/api/`; для своего сервера его можно переопределить:
@@ -413,7 +457,8 @@ URL по умолчанию — `https://whobusy.ru/api/`; для своего �
   -PwhoBusy.apiBaseUrl=https://<server>/api/
 ```
 
-Android-конфигурация принимает HTTPS без credentials/query/fragment. JWT, refresh и
+Android-конфигурация принимает HTTPS без credentials/query/fragment. Web использует
+same-origin `/api/`, с отдельным opt-in только для HTTP loopback dev-server. JWT, refresh и
 пароли не передаются через Gradle. Моки не используют сохранённую серверную сессию;
 в моковой сборке приложение не обращается к API даже при заданном base URL.
 
@@ -427,4 +472,4 @@ Android-конфигурация принимает HTTPS без credentials/que
 shares одного пространства, тогда как backend при повторении берёт последнее значение.
 
 Границы интерфейса и источник макета: [DESIGN_REFERENCE.md](DESIGN_REFERENCE.md).
-Фактические точки входа, репозитории и проверки Android: [AGENT_MAP.md](AGENT_MAP.md).
+Фактические точки входа, репозитории и проверки Android/Web: [AGENT_MAP.md](AGENT_MAP.md).

@@ -68,7 +68,7 @@ class RemoteSessionManager(
     suspend fun restore() = mutex.withLock {
         if (session.getUser() != null) return@withLock
         withContext(NonCancellable) {
-            val refresh = readRefresh() ?: return@withContext
+            val refresh = if (api.browserManagedRefresh) null else readRefresh() ?: return@withContext
             try {
                 val tokens = api.refresh(refresh)
                 persist(tokens.refresh)
@@ -84,16 +84,21 @@ class RemoteSessionManager(
 
     suspend fun logout() = mutex.withLock {
         withContext(NonCancellable) {
-            val refresh = readRefresh()
-            clearLocal()
-            if (refresh != null) {
-                applicationScope.launch {
-                    try {
-                        api.logout(refresh)
-                    } catch (exception: CancellationException) {
-                        throw exception
-                    } catch (_: Exception) {
-                        // Local logout is durable; server revocation is best effort when offline.
+            if (api.browserManagedRefresh) {
+                api.logout(null)
+                clearLocal()
+            } else {
+                val refresh = readRefresh()
+                clearLocal()
+                if (refresh != null) {
+                    applicationScope.launch {
+                        try {
+                            api.logout(refresh)
+                        } catch (exception: CancellationException) {
+                            throw exception
+                        } catch (_: Exception) {
+                            // Local logout is durable; server revocation is best effort when offline.
+                        }
                     }
                 }
             }
@@ -135,24 +140,29 @@ class RemoteSessionManager(
         val first = mutex.withLock { lease(includeRefresh) }
         try {
             val result = block(first.token, first.refresh)
-            mutex.withLock { if (first.generation != generation) throw AuthenticationException() }
+            mutex.withLock { requireCurrentGeneration(first.generation) }
             return result
         } catch (exception: ApiHttpException) {
             if (exception.status != HttpStatusCode.Unauthorized) throw exception
         }
         val next = mutex.withLock {
-            if (first.generation != generation) throw AuthenticationException()
+            requireCurrentGeneration(first.generation)
             if (first.version == version) renew()
             lease(includeRefresh)
         }
         try {
             val result = block(next.token, next.refresh)
-            mutex.withLock { if (next.generation != generation) throw AuthenticationException() }
+            mutex.withLock { requireCurrentGeneration(next.generation) }
             return result
         } catch (exception: ApiHttpException) {
             if (exception.status == HttpStatusCode.Unauthorized) {
                 mutex.withLock {
-                    if (next.generation == generation && next.version == version) invalidate()
+                    requireCurrentGeneration(next.generation)
+                    if (next.version == version) {
+                        invalidate()
+                    } else if (api.browserManagedRefresh) {
+                        throw exception
+                    }
                 }
                 throw AuthenticationException()
             }
@@ -160,10 +170,16 @@ class RemoteSessionManager(
         }
     }
 
+    private fun requireCurrentGeneration(expected: Long) {
+        if (expected == generation) return
+        if (api.browserManagedRefresh) throw CancellationException("Browser session was replaced")
+        throw AuthenticationException()
+    }
+
     private suspend fun lease(includeRefresh: Boolean): Lease {
         if (session.getToken() == null || clock.millis() >= expiresAt - EXPIRY_MARGIN_MILLIS) renew()
-        val refresh = if (includeRefresh) readRefresh() else null
-        if (includeRefresh && refresh == null) {
+        val refresh = if (includeRefresh && !api.browserManagedRefresh) readRefresh() else null
+        if (includeRefresh && !api.browserManagedRefresh && refresh == null) {
             invalidate()
             throw AuthenticationException()
         }
@@ -172,15 +188,23 @@ class RemoteSessionManager(
 
     private suspend fun renew() {
         withContext(NonCancellable) {
-            val refresh = readRefresh() ?: run {
+            val refresh = if (api.browserManagedRefresh) null else readRefresh() ?: run {
                 invalidate()
                 throw AuthenticationException()
             }
             try {
                 val tokens = api.refresh(refresh)
                 persist(tokens.refresh)
-                val user = session.getUser() ?: api.getCurrentUser(tokens.access.accessToken).toDomain()
+                val previousUser = session.getUser()
+                val user = if (api.browserManagedRefresh || previousUser == null) {
+                    api.getCurrentUser(tokens.access.accessToken).toDomain()
+                } else {
+                    previousUser
+                }
+                val identityChanged = previousUser != null && previousUser.id != user.id
+                if (identityChanged) generation++
                 publish(tokens, user)
+                if (identityChanged) throw CancellationException("Browser session identity changed")
             } catch (exception: ApiHttpException) {
                 if (exception.status == HttpStatusCode.Unauthorized) {
                     invalidate()
@@ -198,8 +222,12 @@ class RemoteSessionManager(
         session.save(tokens.access.accessToken, user)
     }
 
-    private suspend fun persist(refresh: String) {
-        refreshTokens.write(json.encodeToString(StoredRefresh(configuration.endpoint(""), refresh)))
+    private suspend fun persist(refresh: String?) {
+        if (api.browserManagedRefresh) {
+            require(refresh == null) { "Browser refresh credentials must not be persisted" }
+            return
+        }
+        refreshTokens.write(json.encodeToString(StoredRefresh(configuration.endpoint(""), requireNotNull(refresh))))
     }
 
     private suspend fun readRefresh(): String? {
@@ -218,7 +246,7 @@ class RemoteSessionManager(
     }
 
     private suspend fun clearLocal() {
-        refreshTokens.clear()
+        if (!api.browserManagedRefresh) refreshTokens.clear()
         generation++
         version++
         expiresAt = Long.MAX_VALUE
@@ -227,7 +255,7 @@ class RemoteSessionManager(
 
     private suspend fun invalidate() = withContext(NonCancellable) {
         try {
-            refreshTokens.clear()
+            if (!api.browserManagedRefresh) refreshTokens.clear()
         } finally {
             generation++
             version++

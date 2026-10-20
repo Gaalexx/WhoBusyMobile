@@ -1,11 +1,14 @@
 package com.project.whobusy.presentation.calendar.viewmodel
 
 import com.project.whobusy.domain.model.CalendarEvent
+import com.project.whobusy.domain.model.BoardSettings
 import com.project.whobusy.domain.model.EventDraft
 import com.project.whobusy.presentation.calendar.model.CalendarMode
 import com.project.whobusy.time.LocalDate
 
 sealed interface CalendarCommand {
+    data class UpdateBoardSettings(val settings: BoardSettings) : CalendarCommand
+
     data class SelectDate(
         val date: LocalDate,
     ) : CalendarCommand

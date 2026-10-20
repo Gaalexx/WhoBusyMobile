@@ -1,3 +1,9 @@
+import org.gradle.api.DefaultTask
+import org.gradle.api.file.DirectoryProperty
+import org.gradle.api.provider.Property
+import org.gradle.api.tasks.Input
+import org.gradle.api.tasks.OutputDirectory
+import org.gradle.api.tasks.TaskAction
 import org.jetbrains.kotlin.gradle.ExperimentalWasmDsl
 import org.jetbrains.kotlin.gradle.dsl.JvmTarget
 
@@ -8,6 +14,45 @@ plugins {
     alias(libs.plugins.composeCompiler)
     alias(libs.plugins.kotlinSerialization)
     alias(libs.plugins.metro)
+}
+
+abstract class GenerateWebConfiguration : DefaultTask() {
+    @get:Input
+    abstract val useMockData: Property<Boolean>
+
+    @get:Input
+    abstract val apiBaseUrl: Property<String>
+
+    @get:OutputDirectory
+    abstract val outputDirectory: DirectoryProperty
+
+    @TaskAction
+    fun generate() {
+        val packageDirectory = outputDirectory.dir("com/project/whobusy/di").get().asFile
+        packageDirectory.mkdirs()
+        val escapedUrl = apiBaseUrl.get()
+            .replace("\\", "\\\\")
+            .replace("\"", "\\\"")
+            .replace("$", "\\$")
+            .replace("\n", "\\n")
+            .replace("\r", "\\r")
+        packageDirectory.resolve("WebBuildConfiguration.kt").writeText(
+            """
+            package com.project.whobusy.di
+
+            internal object WebBuildConfiguration {
+                const val useMockData: Boolean = ${useMockData.get()}
+                const val apiBaseUrl: String = "$escapedUrl"
+            }
+            """.trimIndent() + "\n",
+        )
+    }
+}
+
+val generateWebConfiguration = tasks.register<GenerateWebConfiguration>("generateWebConfiguration") {
+    useMockData.set(providers.gradleProperty("whoBusy.web.useMockData").map(String::toBooleanStrict).orElse(false))
+    apiBaseUrl.set(providers.gradleProperty("whoBusy.web.apiBaseUrl").orElse(""))
+    outputDirectory.set(layout.buildDirectory.dir("generated/webConfiguration"))
 }
 
 kotlin {
@@ -100,6 +145,12 @@ kotlin {
         }
         wasmJsMain.dependencies {
             implementation(npm("@js-joda/timezone", libs.versions.jsJodaTimezone.get()))
+        }
+        matching { it.name == "webMain" }.configureEach {
+            kotlin.srcDir(generateWebConfiguration)
+            dependencies {
+                implementation(libs.ktor.client.js)
+            }
         }
     }
 }

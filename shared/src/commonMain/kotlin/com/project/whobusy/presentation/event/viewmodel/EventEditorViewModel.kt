@@ -50,13 +50,16 @@ class EventEditorViewModel(
     private var loadJob: Job? = null
     private var saveJob: Job? = null
 
+    internal fun isStarted(date: String, eventId: Int?, spaceId: Int?): Boolean =
+        initializedKey == "$date:$eventId:$spaceId"
+
     fun start(
         date: String,
         event: CalendarEvent?,
         spaceId: Int?,
     ) {
         val key = "$date:${event?.id}:$spaceId"
-        if (key == initializedKey) return
+        if (isStarted(date, event?.id, spaceId)) return
         initializedKey = key
         loadJob?.cancel()
         val restored =

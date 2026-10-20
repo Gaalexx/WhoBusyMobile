@@ -41,7 +41,7 @@ interface CalendarModule {
     @Provides
     @SingleIn(AppScope::class)
     fun provideApiConfiguration(configuration: AppConfiguration): ApiConfiguration =
-        ApiConfiguration(configuration.apiBaseUrl)
+        ApiConfiguration(configuration.apiBaseUrl, configuration.allowLocalhostHttp)
 
     @Provides
     @SingleIn(AppScope::class)

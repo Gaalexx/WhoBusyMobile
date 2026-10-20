@@ -10,6 +10,9 @@ import dev.zacsweers.metrox.viewmodel.ViewModelGraph
 interface AppGraph : CalendarModule, NetworkModule, SessionModule, ViewModelGraph {
     @DependencyGraph.Factory
     fun interface Factory {
-        fun create(@Provides @ApplicationContext context: Context): AppGraph
+        fun create(
+            @Provides @ApplicationContext context: Context,
+            @Provides configuration: AppConfiguration,
+        ): AppGraph
     }
 }

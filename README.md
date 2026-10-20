@@ -1,95 +1,81 @@
 # WhoBusy
 
-Доска планов и занятости по пространствам. Проект объединяет перенесённое Android-приложение на Kotlin, Jetpack Compose, Ktor Client, Metro DI и Navigation 3 с заготовкой Kotlin Multiplatform для Android и Web.
+Доска планов и занятости по пространствам на Kotlin Multiplatform, Compose Multiplatform, Ktor Client, Metro DI и Navigation 3.
 
-Android-приложение реализует [обновлённые 28 экранов Figma](https://www.figma.com/design/dDatbSFzoHbGIn2PWUqZnx?node-id=14-90): вход и регистрацию, общую доску день/неделя/месяц, пространства и приглашения, участников и роли, личные планы с отдельной видимостью, планы пространства, повторения, профиль. Дополнительно доступно управление аккаунтами глобальным администратором.
+Общий интерфейс реализует [28 экранов Figma](https://www.figma.com/design/dDatbSFzoHbGIn2PWUqZnx?node-id=14-90): вход и регистрацию, доску день/неделя/месяц, пространства, приглашения и роли, личные и пространственные планы, повторения и профиль. Дополнительно доступно управление аккаунтами глобальным администратором.
 
 ## Структура
 
-- `androidApp` — Android-приложение `com.project.whobusy`: экраны на Compose, внедрение зависимостей через Metro, HTTP-клиент Ktor и Navigation 3.
-- `core:ui` — Android-модуль дизайн-системы: общие UI-компоненты, тема и ресурсы оформления.
-- `shared` — общий модуль исходного примера Compose Multiplatform.
-- `webApp` — Web-приложение исходного примера с целями JavaScript и Wasm.
+- `shared/src/commonMain/kotlin/com/project/whobusy/` — модели и контракты `domain`, моки и REST-слой `data`, MetroX ViewModel, экраны, Navigation 3 и дизайн-система `core/ui`.
+- `shared/src/commonMain/composeResources/` — общие строки, изображения и архив оформления; доступ через Compose Resources.
+- `shared/src/androidMain/` — OkHttp, Android Keystore/DataStore, платформенная блокировка моков и BackHandler.
+- `androidApp` — Android-host `com.project.whobusy`: Application, Activity, системные панели и AppGraph; BuildConfig передаётся общему CalendarModule через AppConfiguration для выбора REST/demo.
+- `webApp` — браузерная точка входа для JavaScript и Wasm, запускает общий интерфейс с `DemoAppGraph` и моками в памяти.
 
-Android-экраны пока не перенесены в `shared/src/commonMain`; Web-приложение показывает исходный пример.
+Отдельного модуля `core:ui` и исходного демонстрационного Greeting больше нет. Android и Web используют одни экраны, состояния, модели и расчёты. iOS и desktop цели пока не настроены.
 
-Metro 1.4.5 работает как Kotlin compiler plugin без KSP и Dagger/Hilt. `WhoBusyApplication` создаёт граф `AppGraph` из пакета `di`; MetroX ViewModel подключает фабрику через Compose. Календарь и редактор плана сохраняют область сессии и `SavedStateHandle` через assisted-фабрики.
+Metro 1.4.5 подключён Kotlin compiler plugin без KSP и Dagger/Hilt. Обычные ViewModel регистрируются в общем графе; календарь и редактор получают `SavedStateHandle` через assisted-фабрики. Сохранены области ViewModel в пределах сессии и результатов операций в StateFlow до `ResultHandled`.
 
-Оставшиеся препятствия переносу в общий код — `java.time` и другие JVM API, Android-ресурсы UI, защищённое хранилище и браузерная обработка refresh cookie. Подробности и границы платформ — в [карте проекта](docs/AGENT_MAP.md#границы-мультиплатформенности).
+Даты используют `kotlinx.datetime` и `kotlin.time`. Пакет `time` даёт совместимые операции календаря, Clock и форматирование существующих русских шаблонов. Расчёты повторений сохраняют локальное время без привязки к часовому поясу.
 
-В `androidApp` находятся слои `data`, `domain`, `di`, `presentation`; UI-фичи разделены на `ui`, `viewmodel`, State и Command. Завершение операций хранится в StateFlow до `ResultHandled`. В `core:ui` находятся общие компоненты, стандартные Material Icons через `UiIcon`, цвета, тема и автономные Compose Preview.
-
-`WhoBusyApplication → MainActivity → WhoBusyApp → AppNavHost` — точка входа и типизированная Navigation 3. Три основные вкладки показывают плавающий бар поверх экрана, вложенные маршруты его скрывают.
-
-`MockAccountStore`, `MockWorkspaceRepository`, `MockCalendarRepository` используют общий набор аккаунтов, пространств, ролей и планов. Видимость и права проверяются в `data` до передачи UI.
-
-`RemoteAuthRepository`, `RemoteWorkspaceRepository`, `RemoteCalendarRepository` используют REST API; `RemoteSessionManager` управляет обновлением и восстановлением сессии. Access-токен и профиль живут в памяти, refresh хранится зашифрованным через Android Keystore и DataStore в каталоге без backup.
+Для REST в браузере ещё нужен auth/HTTP-адаптер: текущий native-клиент читает `Set-Cookie` и задаёт `Cookie` вручную. Браузер должен сам хранить HttpOnly refresh-cookie и отправлять её с credentials при подходящих CORS/SameSite. Web сейчас работает только с demo-данными; история браузера и его Back ещё не подключены. Подробности платформенных границ — в [карте проекта](docs/AGENT_MAP.md#границы-мультиплатформенности).
 
 Версии зависимостей: `gradle/libs.versions.toml`. Для ИИ-агентов: [инструкции](AGENTS.md), [карта проекта](docs/AGENT_MAP.md), [источник дизайна](docs/DESIGN_REFERENCE.md).
 
 ## Сборка и проверки
 
-- JDK 21 для Gradle daemon, JVM target 17.
-- Android SDK Platform 37; путь к SDK в локальном `local.properties`.
-- Gradle Wrapper 9.5.1, AGP 9.1.1; Android-модули используют встроенную в AGP поддержку Kotlin.
-- Минимальный Android API 34, target SDK 36.
+Нужны JDK 21 для Gradle daemon и Android SDK Platform 37; путь к SDK задаётся в локальном `local.properties`. Используются Gradle Wrapper 9.5.1, AGP 9.1.1 и JVM target 17. Android: min API 34, target SDK 36.
 
 ```bash
-./gradlew :androidApp:assembleDebug
-./gradlew :androidApp:testDebugUnitTest :core:ui:testDebugUnitTest
+./gradlew :androidApp:assembleDebug :androidApp:assembleRelease
+./gradlew :shared:testAndroidHostTest :androidApp:testDebugUnitTest
+./gradlew :shared:jsNodeTest
 ./gradlew :androidApp:lintDebug
-./gradlew :androidApp:assembleDebugAndroidTest
+./gradlew :shared:assembleAndroidDeviceTest :androidApp:assembleDebugAndroidTest
+./gradlew :webApp:jsBrowserDevelopmentWebpack :webApp:wasmJsBrowserDevelopmentWebpack
 ```
 
-`testDebugUnitTest` запускает JVM-тесты. `assembleDebugAndroidTest` собирает APK инструментальных тестов, но не запускает их на устройстве. Для запуска нужен Android-девайс или эмулятор:
+`testAndroidHostTest` запускает общие и Android-host JVM-тесты, `jsNodeTest` — общие тесты JavaScript под Node.js; `testDebugUnitTest` — оставшиеся тесты Android-host. Задачи `assemble…Test` собирают инструментальные APK, но не запускают тесты на устройстве. Для запуска UI-сценариев нужен Android-девайс или эмулятор:
 
 ```bash
-./gradlew :androidApp:connectedDebugAndroidTest
+./gradlew :androidApp:connectedDebugAndroidTest -PwhoBusy.useMockData=true
 ```
 
-Навигационные сценарии с демоданными запускайте со свойством `-PwhoBusy.useMockData=true`. Debug APK: `androidApp/build/outputs/apk/debug/androidApp-debug.apk`.
+Debug APK: `androidApp/build/outputs/apk/debug/androidApp-debug.apk`. Release APK не подписан. Фактически выполненные проверки отражаются отдельно в [карте проекта](docs/AGENT_MAP.md#выполненные-проверки).
 
 Запуск Web-приложения:
 
 ```bash
-./gradlew :webApp:wasmJsBrowserDevelopmentRun
 ./gradlew :webApp:jsBrowserDevelopmentRun
+./gradlew :webApp:wasmJsBrowserDevelopmentRun
 ```
 
-## Данные Android-приложения
+## Источники данных
 
-По умолчанию приложение использует реальный API: `whoBusy.useMockData=false`, `whoBusy.apiBaseUrl=https://whobusy.ru/api/`.
-
-Для сборки с демонстрационными данными:
+Android по умолчанию использует реальный API: `whoBusy.useMockData=false`, `whoBusy.apiBaseUrl=https://whobusy.ru/api/`. Для демонстрационной сборки:
 
 ```bash
 ./gradlew :androidApp:assembleDebug -PwhoBusy.useMockData=true
 ```
 
-Для переопределения адреса API укажите HTTPS URL:
+Для своего сервера:
 
 ```bash
 ./gradlew :androidApp:assembleDebug -PwhoBusy.apiBaseUrl=https://example.com/api/
 ```
 
-Эти свойства также можно задать в локальном пользовательском `~/.gradle/gradle.properties`.
+Эти свойства также можно задать в пользовательском `~/.gradle/gradle.properties`; они относятся к Android-графу. Web использует общий demo-граф и не обращается к API.
 
-В mock-режиме поля входа заполнены: `demo@whobusy.test` / `demo1234` (также логин `demo`). Глобальный администратор: `admin` / `admin123`. Остальные демоаккаунты имеют пароль `demo1234`. В удалённом режиме демологин не заполняется.
+В demo-режиме поля входа заполнены: `demo@whobusy.test` / `demo1234` (также логин `demo`). Глобальный администратор: `admin` / `admin123`. Остальные демоаккаунты имеют пароль `demo1234`. В удалённом режиме демологин не заполняется.
 
-Демоучастник состоит в трёх пространствах с разными ролями и имеет приглашение в четвёртое. Даты планов вычисляются относительно текущего дня. В mock-режиме сетевых запросов нет, данные и сессия хранятся в памяти и сбрасываются с процессом. Регистрация сразу открывает сессию с пустым списком пространств.
+Демоучастник состоит в трёх пространствах с разными ролями и имеет приглашение в четвёртое. Даты планов вычисляются относительно текущего дня. Данные моков и сессия живут в памяти: Android сбрасывает их вместе с процессом, Web — при перезагрузке страницы. Новая регистрация открывает сессию с пустым списком пространств.
 
-## API
+## API и ограничения
 
-[API_CONTRACT.md](docs/API_CONTRACT.md) содержит перенесённый контракт, сверенный с [FunProject, commit f828103](https://github.com/Gaalexx/FunProject/tree/f8281030dc268ddb94e93be290f6095858d8500d) от 17.10.2026, версия FastAPI — 2.0.0: регистрация, login/email, пространства, роли, приглашения, настройки доски и четыре уровня видимости планов.
+[API_CONTRACT.md](docs/API_CONTRACT.md) содержит контракт, сверенный с [FunProject, commit f828103](https://github.com/Gaalexx/FunProject/tree/f8281030dc268ddb94e93be290f6095858d8500d) от 17.10.2026, версия FastAPI — 2.0.0.
 
-По этому контракту access JWT действует 15 минут по умолчанию (`expires_in=900` в JSON). Refresh-token выдаётся только в `HttpOnly` cookie, ротируется при обновлении и имеет срок 30 дней. Предусмотрены `auth/refresh`, `auth/logout`, `auth/logout-all`; выход, смена/сброс пароля и блокировка отзывают refresh-сессии по правилам контракта. Native-клиент обрабатывает `Set-Cookie`, включая ротацию/удаление; refresh не передаётся полем JSON.
+Общие `RemoteAuthRepository`, `RemoteWorkspaceRepository` и `RemoteCalendarRepository` реализуют REST-контракт. На Android `RemoteSessionManager` управляет обновлением и восстановлением сессии: access и профиль находятся в памяти, refresh хранится зашифрованным через Android Keystore/DataStore в каталоге без backup. Ротация фиксируется до публикации новой сессии; параллельные 401 объединяются в одно обновление, защищённый запрос повторяется один раз.
 
-Пользовательский сервер и default base URL: [whobusy.ru](https://whobusy.ru/), `https://whobusy.ru/api/`. Свойство `whoBusy.useMockData` согласованно переключает все три репозитория — Auth, Workspace и Calendar. Учётные данные и токены через Gradle не передаются.
+Обычный выход очищает локальную сессию до возврата ко входу; серверный отзыв выполняется в фоне и остаётся best effort. Выход на всех устройствах требует подтверждения успешного ответа сервера. Аварийное завершение между серверной ротацией и сохранением refresh после истечения grace может потребовать нового входа.
 
-В исходниках реализованы регистрация/вход, зашифрованное сохранение refresh, восстановление при запуске, единое обновление access для параллельных 401 и однократный повтор запросов. До восстановления показывается загрузка; при временной ошибке доступны повтор и новый вход. Refresh передаётся вручную только выбранным auth-маршрутам этого API, а не через универсальный cookie jar.
-
-Локальный выход очищает сохранённую сессию до возврата на экран входа; серверный отзыв выполняется в фоне и при отсутствии сети остаётся best effort. В профиле также есть «Выйти на всех устройствах» с подтверждением: повторный запрос и переходы блокируются на время выполнения, а при временной ошибке показывается сообщение и текущая сессия сохраняется.
-
-Аварийное завершение между серверной ротацией и сохранением нового refresh может потребовать нового входа после истечения grace. Подробности и отличие logout от logout-all — в [контракте](docs/API_CONTRACT.md). Описание remote отражает код; результаты сборки, тестов и live-проверки фиксируются отдельно в [карте проекта](docs/AGENT_MAP.md).
-
-Повторения поддерживают ежедневный режим, будни, недели, месяцы и годы, включая `INTERVAL`, `COUNT` и `UNTIL` для этого подмножества RRULE. Изменения/удаление относятся ко всей серии. Исключения отдельных вхождений и постоянный локальный кэш планов не реализованы; зашифрованное хранилище refresh существует отдельно.
+Повторения поддерживают ежедневный режим, будни, недели, месяцы и годы, включая `INTERVAL`, `COUNT` и `UNTIL` для используемого подмножества RRULE. Изменения/удаление относятся ко всей серии. Исключения отдельных вхождений, постоянный локальный кеш планов и offline CRUD не реализованы. Форматирование дат пока рассчитано на русский интерфейс.

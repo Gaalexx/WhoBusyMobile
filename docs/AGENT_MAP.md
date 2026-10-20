@@ -2,87 +2,83 @@
 
 ## Состояние и правила
 
-Приложение реализует механику пространств из Figma 02 (28 экранов) и FunProject API 2.0. Модули: `androidApp`, `core:ui`, `shared` и `webApp`; слои Android-приложения — пакеты `data/domain/di/presentation`. Auth/Calendar/Workspace выбираются согласованно через BuildConfig.USE_MOCK_DATA. В `androidApp/build.gradle.kts` свойство `whoBusy.useMockData` читается через Gradle providers: по умолчанию `false` (REST), `-PwhoBusy.useMockData=true` включает моки. Моки хранят данные в памяти без сети. Штатный адрес REST — `https://whobusy.ru/api/`, переопределяется `-PwhoBusy.apiBaseUrl=https://<server>/api/`.
+WhoBusy реализует пространства из Figma 02 (28 экранов) и FunProject API 2.0. Общие модели, data, ViewModel, UI, навигация и дизайн-система находятся в `shared`; `androidApp` и `webApp` запускают их на Android и в браузере. Отдельного модуля `core:ui` нет. Исходный пример Compose Multiplatform удалён.
 
-Перед изменениями читай относящиеся к задаче файлы. Чистые экраны и Preview не используют DI, сеть и data. Обновляй карту при изменении архитектуры/поведения. Контракт: [API_CONTRACT.md](API_CONTRACT.md), источник оформления и соответствие 28 экранов: [DESIGN_REFERENCE.md](DESIGN_REFERENCE.md).
+На Android `BuildConfig.USE_MOCK_DATA` передаётся в общий `AppConfiguration`: по умолчанию `false` (REST), `-PwhoBusy.useMockData=true` включает моки согласованно для Auth/Calendar/Workspace. Штатный REST URL — `https://whobusy.ru/api/`, переопределяется `-PwhoBusy.apiBaseUrl=https://<server>/api/`. Web запускается через `DemoAppGraph` только с моками и не выполняет сетевых запросов.
+
+Перед изменениями читай относящиеся к задаче файлы. Чистые экраны и Preview не используют DI, сеть и data. Карта описывает текущий код. Контракт: [API_CONTRACT.md](API_CONTRACT.md), источник оформления: [DESIGN_REFERENCE.md](DESIGN_REFERENCE.md).
 
 ## Модули и сборка
 
 | Модуль | Назначение и связи |
 | --- | --- |
-| `androidApp` | Перенесённое Android-приложение `com.project.whobusy`; зависит от `core:ui`, не подключает `shared` |
-| `core:ui` | Android-дизайн-система без зависимости от моделей приложения |
-| `shared` | Исходный пример Compose Multiplatform; цели Android, JavaScript и Wasm, общий UI в `shared/src/commonMain/kotlin/com/gaalex/whobusymp/App.kt` |
-| `webApp` | Браузерная точка входа `webApp/src/webMain/kotlin/com/gaalex/whobusymp/main.kt`, вызывает `shared.App` через ComposeViewport; цели JavaScript и Wasm |
+| `shared` | KMP-библиотека для Android, JavaScript и Wasm: общий код в `commonMain`, адаптеры Android в `androidMain`, browser BackHandler в `webMain` |
+| `androidApp` | Android-host `com.project.whobusy`, зависит от `shared`; Application, Activity, AppGraph, BuildConfig и ресурсы запуска |
+| `webApp` | `webApp/src/webMain/kotlin/com/gaalex/whobusymp/main.kt` вызывает `shared.App` через ComposeViewport; JavaScript/Wasm, demo-граф |
 
-Android-экраны и предметная логика пока находятся в `androidApp`, в `shared/src/commonMain` не переносились. Web показывает исходный пример Compose Multiplatform. `core:ui` остаётся Android-модулем.
-
-Версии в `gradle/libs.versions.toml`: Kotlin 2.4.20, AGP 9.1.1, Compose Multiplatform 1.12.1, Metro 1.4.5. Wrapper использует Gradle 9.5.1, daemon JVM — Azul JDK 21 из `gradle/gradle-daemon-jvm.properties`. JVM bytecode target у `androidApp` и `core:ui` — 17, у Android-цели `shared` — 11. Android SDK: compile 37, target 36, min 34. Metro подключён Kotlin compiler plugin в `androidApp/build.gradle.kts`; runtime добавляется плагином, MetroX — зависимость `metrox-viewmodel-compose`. KSP и Dagger/Hilt-зависимостей в проекте нет.
+Версии задаются в `gradle/libs.versions.toml`: Kotlin 2.4.20, AGP 9.1.1, Compose Multiplatform 1.12.1, Metro 1.4.5, kotlinx-datetime 0.8.0. Wrapper — Gradle 9.5.1, daemon — JDK 21. Android JVM target 17; SDK compile 37, target 36, min 34. Metro compiler plugin подключён в `shared` и `androidApp`, KSP и Dagger/Hilt не используются. iOS и desktop цели не объявлены.
 
 ## Точки входа и расположение
 
-Пути относительно `androidApp/src/main/java/com/project/whobusy/`, если не указано иначе.
+Общие пути относительно `shared/src/commonMain/kotlin/com/project/whobusy/`, если не указано иначе.
 
 | Область | Путь | Ответственность |
 | --- | --- | --- |
-| Запуск | `WhoBusyApplication.kt`, `MainActivity.kt` | Создание AppGraph, передача MetroX-фабрики в Compose, edge-to-edge, корневая Composable |
-| Приложение | `presentation/WhoBusyApp.kt`, `AppViewModel.kt`, `AppState.kt`, `AppCommand.kt`, `session/ui/SessionRestoreScreen.kt` | Тема, пользователь сессии, восстановление входа, повтор/новый вход, системные панели |
-| Навигация | `presentation/navigation/` | Сериализуемые ScreenTypes, NavDisplay, overlay-бар, ViewModel области сессии |
-| Вход | `presentation/login/ui/`, `viewmodel/` | Логин или email, пароль, ошибки, переход к регистрации |
-| Регистрация | `presentation/register/ui/`, `viewmodel/` | Логин, фамилия, имя, необязательный email, пароль; успешная регистрация открывает сессию |
-| Общая доска | `presentation/calendar/ui/`, `viewmodel/` | День/неделя/месяц, all-day, легенда владельцев, общие данные и мутации планов |
-| Даты и геометрия | `presentation/calendar/model/` | Неделя/месяц, полосы пересечений, разворачивание повторений RecurringEvents |
-| Настройки доски | `presentation/board/ui/`, `viewmodel/` | Выбор пространств и включение всех собственных планов |
-| Пространства | `presentation/spaces/ui/`, `viewmodel/` | Список/пустое состояние, создание, вступление, приглашения, участники/роли, ключ, настройки, выход и удаление |
-| План | `presentation/event/ui/`, `model/`, `viewmodel/` | Подробности и busy-only, общий черновик редактора, размещение, видимость, даты/весь день/статус/повторы |
-| Профиль | `presentation/profile/ui/`, `viewmodel/` | Данные пользователя, приглашения, выход с текущего/всех устройств, изменение имени/email/цвета/пароля |
-| Аккаунты | `presentation/users/ui/`, `viewmodel/` | CRUD пользователей для глобального admin; роли и активность аккаунта |
-| Domain | `domain/model/`, `domain/repository/` | Модели и контракты без Android/Compose/Ktor/DI; даты пока используют java.time |
-| Аккаунты моков | `data/mock/MockAccountStore.kt`, `MockAuthRepository.kt` | Общий StateFlow аккаунтов, пароли, нормализация/валидация, регистрация/вход |
-| Пространства моков | `data/mock/MockWorkspaceRepository.kt`, `MockWorkspaceData.kt` | Членство, роли, приглашения, настройки доски, профиль, администрирование, история отсоединения |
-| Планы моков | `data/mock/MockCalendarRepository.kt`, `MockPlanData.kt` | CRUD, права, маскировка, применение выхода/удаления пространства или аккаунта |
-| Сессия | `data/session/SessionStore.kt`, `RemoteSessionManager.kt`, `storage/` | Access/user в памяти, refresh в зашифрованном DataStore, ключ Android Keystore, ротация/выход/восстановление |
-| REST | `data/network/`, `data/remote/`, `data/repository/` | HTTPS Ktor/OkHttp, Auth/Calendar/Workspace API и DTO, реальные реализации всех трёх контрактов |
-| Граф DI | `di/AppGraph.kt`, `di/ApplicationContext.kt` | Metro AppScope, provider-интерфейсы CalendarModule/NetworkModule/SessionModule и MetroX ViewModelGraph; application Context через собственный qualifier |
-| Провайдеры DI | `di/NetworkModule.kt`, `di/CalendarModule.kt`, `di/SessionModule.kt` | HttpClient/JSON/Clock, единый режим mock/remote, singleton защищённого хранилища и application CoroutineScope |
-| Фабрика ViewModel | `di/AppViewModelFactory.kt` | MetroViewModelFactory с картами обычных ViewModel и assisted-фабрик |
+| Android-запуск | `androidApp/src/main/java/com/project/whobusy/{WhoBusyApplication,MainActivity}.kt` | Создание AppGraph с Android Context и AppConfiguration, фабрика MetroX, edge-to-edge, системные панели |
+| Web-запуск | `App.kt`, `di/DemoAppGraph.kt`, `webApp/src/webMain/kotlin/com/gaalex/whobusymp/main.kt` | Общий UI с демо-репозиториями, граф запоминается на время композиции |
+| Приложение | `presentation/WhoBusyApp.kt`, `AppViewModel.kt`, `AppState.kt`, `AppCommand.kt`, `session/ui/SessionRestoreScreen.kt` | Тема, сессия, восстановление входа, повтор/новый вход; Android получает состояние сессии callback для системных панелей |
+| Навигация | `presentation/navigation/` | ScreenTypes, NavDisplay, overlay-бар, область ViewModel сессии |
+| Вход и регистрация | `presentation/{login,register}/{ui,viewmodel}/` | Логин/email, регистрация, ошибки, публикация сессии; LoginDefaults приходит из графа |
+| Доска и её настройки | `presentation/calendar/{ui,viewmodel}/`, `presentation/board/{ui,viewmodel}/` | День/неделя/месяц, all-day, легенда, загрузка/мутации планов, фильтры пространств |
+| Календарные расчёты | `presentation/calendar/model/`, `time/` | Геометрия, календарные периоды, повторения, общие даты и Clock |
+| Пространства | `presentation/spaces/{ui,viewmodel}/` | Список, создание/вступление, приглашения, роли, ключ, настройки, выход и удаление |
+| План | `presentation/event/{ui,model,viewmodel}/` | Подробности/busy-only, общий черновик, видимость, даты/статус/повторы |
+| Профиль и аккаунты | `presentation/profile/{ui,viewmodel}/`, `presentation/users/{ui,viewmodel}/` | Профиль, приглашения, logout/logout-all, пароль; CRUD аккаунтов для глобального admin |
+| Domain | `domain/{model,repository}/` | Модели/контракты без Android, Compose, Ktor и DI; даты kotlinx.datetime |
+| Моки | `data/mock/` | Единые аккаунты/пространства/планы, права и история отсоединения; DataLock имеет Android/JS/Wasm actual |
+| Сессия | `data/session/`, `data/session/storage/{RefreshTokenStore,TokenCipher}.kt` | Access/user в памяти, восстановление/ротация native-сессии; контракты хранилища/шифра общие |
+| REST | `data/{network,remote,repository}/` | Общие API/DTO, Ktor-запросы, ошибки и реализации репозиториев; URL проверяется Ktor Url |
+| Общий DI | `di/{AppConfiguration,CalendarModule,DemoAppGraph,AppViewModelFactory,ApplicationScope}.kt` | Конфигурация/выбор репозиториев, demo-граф, MetroX-фабрика, qualifier coroutine scope |
+| Android DI и адаптеры | `shared/src/androidMain/kotlin/com/project/whobusy/` | NetworkModule/SessionModule/ApplicationContext, OkHttp, Keystore/DataStore, PlatformBackHandler |
+| Android-граф | `androidApp/src/main/java/com/project/whobusy/di/AppGraph.kt` | Объединяет общие и Android-provider интерфейсы, принимает Context и AppConfiguration |
 
-`presentation/calendars/` и методы выбора ownerIds в CalendarRepository сохранены для совместимости старого исходного кода, из навигации не вызываются. Вторая вкладка имеет исторический тип `ScreenTypes.Calendars`, отображает новый `SpacesRoot`.
+`presentation/calendars/` и методы выбора ownerIds в CalendarRepository сохранены для совместимости старого кода, из навигации не вызываются. Исторический тип второй вкладки `ScreenTypes.Calendars` отображает SpacesRoot.
 
 ## Внедрение зависимостей
 
-`WhoBusyApplication.appGraph` лениво вызывает `createGraphFactory<AppGraph.Factory>().create(applicationContext)`. `AppGraph` объединяет `CalendarModule`, `NetworkModule`, `SessionModule` и `ViewModelGraph`; Context передаётся параметром `@Provides @ApplicationContext`. `@SingleIn(AppScope::class)` сохраняет singleton-объекты в пределах графа. Provider-функции `() -> Mock…` / `() -> Remote…` создают только выбранную ветку `BuildConfig.USE_MOCK_DATA`, поэтому моковый режим не инициализирует сеть и защищённое хранилище.
+Android `WhoBusyApplication.appGraph` лениво создаёт `AppGraph` через Metro Factory, передавая application Context и AppConfiguration из BuildConfig. Общий CalendarModule выбирает mock/remote; Android NetworkModule создаёт JSON/HttpClient, SessionModule предоставляет защищённое хранилище и application CoroutineScope. `@SingleIn(AppScope::class)` ограничивает singleton временем жизни графа. Provider-функции `() -> Mock…` / `() -> Remote…` создают только выбранную ветку, поэтому demo не инициализирует HTTP или Keystore.
 
-`AppViewModelFactory` внедряет карты `Map<KClass<out ViewModel>, () -> ViewModel>` и `Map<KClass<out ViewModel>, () -> ViewModelAssistedFactory>` и публикуется как `MetroViewModelFactory`. `MainActivity` передаёт её через `LocalMetroViewModelFactory`. Девять обычных ViewModel (`App`, `Login`, `Registration`, `BoardSettings`, `Spaces`, `Profile`, `ProfileEditor`, `Users`, `UserEditor`) используют `@Inject`, `@ViewModelKey`, `@ContributesIntoMap(AppScope::class)` и `metroViewModel()`. `CalendarViewModel` и `EventEditorViewModel` используют `@AssistedInject`; вложенные Factory создают `SavedStateHandle` из `CreationExtras.createSavedStateHandle()` и зарегистрированы через `@ViewModelAssistedFactoryKey`. Их получает `assistedMetroViewModel()` с общим owner сессии. Самим ViewModel singleton-scope не назначается; жизненным циклом управляет ViewModelStore.
+Web `App()` запоминает `createGraph<DemoAppGraph>()` и передаёт фабрику через LocalMetroViewModelFactory. DemoAppGraph связывает три mock-реализации через `@Binds` и предоставляет Clock/LoginDefaults; Android BuildConfig ему не требуется.
+
+Общий AppViewModelFactory реализует MetroViewModelFactory с картами обычных провайдеров и assisted-фабрик. Девять обычных ViewModel используют `@Inject`, `@ViewModelKey`, `@ContributesIntoMap(AppScope::class)` и `metroViewModel()`. CalendarViewModel и EventEditorViewModel используют `@AssistedInject`; Factory создаёт SavedStateHandle из CreationExtras и зарегистрирована через `@ViewModelAssistedFactoryKey`. Их получает `assistedMetroViewModel()` с общим owner сессии. Объектами ViewModel управляет ViewModelStore, им не назначается singleton-scope.
 
 ## Границы мультиплатформенности
 
-Metro поддерживает KMP, но код приложения пока остаётся в `androidApp`, а `shared` и `webApp` содержат пример. Следующие зависимости ограничивают прямой перенос в `commonMain`; это состояние кода, а не выполненная миграция.
-
-| Приоритет | Место | Ограничение и граница переноса |
+| Область | Реализованная граница | Оставшееся ограничение |
 | --- | --- | --- |
-| 1 — предметные даты | `domain/model/`, `presentation/calendar/`, `presentation/event/`, `data/remote/dto/` | LocalDate/LocalDateTime/YearMonth/Clock из `java.time` требуют общих типов дат и адаптации расчётов, сериализации и форматирования |
-| 2 — UI и ресурсы | `core/ui/build.gradle.kts`, `core/ui/src/main/res/`, `androidApp/src/main/res/`, UI и State в `presentation/` | core:ui — Android library; `R`, `androidx.compose.ui.res`, `@StringRes Int` и Android string ID в состояниях требуют общих ресурсов и представления ошибок; Activity и управление системными панелями остаются в Android-host |
-| 3 — Web-авторизация | `data/remote/api/AuthAPI.kt`, `data/session/RemoteSessionManager.kt` | Текущий native-клиент читает `Set-Cookie`, вручную задаёт `Cookie` и хранит refresh. Браузер управляет HttpOnly cookie сам; для Web нужна отдельная реализация авторизации с browser credentials и согласованными CORS/SameSite, без выдачи refresh JavaScript-коду |
-| 4 — хранилище и транспорт | `data/session/storage/`, `data/network/HttpClientFactory.kt`, `data/remote/ApiConfiguration.kt` | Context/noBackupFilesDir, java.io.File/java.nio.ByteBuffer, Android Keystore/JCE и OkHttp/java.net.URI требуют платформенных реализаций; интерфейсы `RefreshTokenStore` и `TokenCipher` уже отделяют защищённое хранение |
-| 5 — JVM-утилиты и выполнение | `data/mock/`, `data/session/RemoteSessionManager.kt`, `di/SessionModule.kt` | java.util.UUID/Locale, synchronized и Dispatchers.IO не переносятся напрямую в общий код с браузерными целями; нужны общие аналоги либо внедряемые платформенные зависимости |
+| Даты | `time/`: aliases к kotlinx.datetime LocalDate/LocalDateTime/LocalTime/YearMonth, kotlin.time Instant/Duration; Clock и совместимые операции | Форматтер покрывает используемые русские шаблоны, универсальная локализация не реализована; повторения работают с локальным floating time |
+| UI/ресурсы | Общие Compose UI/Material 3, ресурсы Res/StringResource, ViewModel/Navigation 3/Metro | Application/Activity, системные панели и значок запуска остаются Android-host; Compose Preview без сети/DI |
+| Сеть/refresh | Общие REST API/репозитории/SessionManager; Android OkHttp и защищённое хранилище в androidMain | Native AuthAPI вручную читает Set-Cookie и задаёт Cookie. Web REST не включён: нужны browser credentials, HttpOnly cookie и согласованные backend CORS/SameSite/Secure/Path |
+| Секреты | Общие RefreshTokenStore/TokenCipher; Android Keystore/JCE и DataStore вне backup | Эти реализации Android-специфичны; для новых native-целей нужны защищённые платформенные реализации. Браузеру нельзя выдавать refresh в JS/localStorage |
+| Выполнение | Моки используют kotlin.uuid/общие строковые операции и expect/actual DataLock; common coroutine-код переносим | JVM-lock используется только в androidMain; JS/Wasm actual опирается на однопоточное выполнение браузера |
+| Back/история | PlatformBackHandler вызывает Android BackHandler; экранные callbacks общие | Web actual пока no-op; browser Back, History API и deep links не подключены |
+| Дополнительные платформы | Настроены Android, JavaScript и Wasm | iOS/desktop цели и их адаптеры не объявлены, сборка на macOS/native не проверялась |
 
-Самим [ViewModel](https://kotlinlang.org/docs/multiplatform/compose-viewmodel.html), Navigation 3 и [DataStore](https://developer.android.com/kotlin/multiplatform/datastore) замена только из-за KMP не требуется; нужны соответствующие платформам артефакты и реализации. `Application`, `MainActivity` и Android Keystore закономерно остаются на Android. Ограничение Web-авторизации следует из браузерных правил доступа к [Set-Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie) и [Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie); копирование native-хранилища refresh в Web его не решает.
+JS/Wasm подключают npm `@js-joda/timezone` 2.25.2 и инициализируют его в `shared/src/{jsMain,wasmJsMain}/kotlin/com/project/whobusy/time/TimeZoneInitialization.*.kt` по [инструкции kotlinx-datetime](https://github.com/Kotlin/kotlinx-datetime/tree/v0.8.0#note-about-time-zones-in-js). Корневой `build.gradle.kts` фиксирует `@js-joda/core` 5.7.0 через Yarn resolution для обеих целей: транзитивная версия 3.2.0 несовместима с новым timezone ([upstream issue](https://github.com/Kotlin/kotlinx-datetime/issues/627)). Версии задаются в каталоге, Yarn lock-файлы отслеживаются. Это добавляет региональные зоны и правила DST к базовой поддержке фиксированных offset; CalendarTimeTest проверяет Europe/Moscow и переход DST Europe/Berlin. Локальные повторения по-прежнему сохраняют floating time.
+
+Браузер сам управляет HttpOnly cookie и ограничивает доступ JavaScript к [Set-Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Set-Cookie) и [Cookie](https://developer.mozilla.org/en-US/docs/Web/HTTP/Reference/Headers/Cookie). Перенос native-хранилища refresh в Web не заменяет браузерный auth-адаптер. Web сейчас предоставляет общий продуктовый UI с demo-данными.
 
 ## Дизайн-система и строки
 
-`core/ui/src/main/java/com/project/whobusy/core/ui/`:
+`shared/src/commonMain/kotlin/com/project/whobusy/core/ui/` содержит общие `theme/` и `components/`, без зависимости от моделей приложения.
 
-- `theme/`: палитра, светлые цвета карточек, Material3-тема и типографика.
-- `components/`: кнопки/FAB, поля, Tabs/BottomBar/TopBar, DateCell, EventCard/Chip, Avatar, SwitchRow, Notice, ListRow, SectionTitle, ColorPalette, SelectionMark, RadioRow, Toggle, ChoicePill и общая часовая сетка WhoBusyTimeGrid/WhoBusyTimeGridItem.
-- Предметные иконки централизованы в `components/WhoBusyIcon.kt`: `UiIcon.imageVector` использует стандартные `Icons.Filled` из Material, Back — `Icons.AutoMirrored.Filled.ArrowBack`. Маркеры выбора используют Material CheckCircle/RadioButtonUnchecked. Зависимость подключена в `core:ui`, версия — в каталоге Gradle. Исключений для текущего набора нет; новые значки сначала ищи в Material, недостающие — в готовых интернет-каталогах с указанием источника, без собственного рисования.
-- Декоративные свотчи палитры и thumb переключателя используют ресурсы `core/ui/src/main/res/drawable/`. Экспорты Figma сохранены в `core/ui/src/main/assets/design/` как исходный архив оформления. Предметные иконки из него не отображаются; временных Figma URL в коде нет.
-- `WhoBusyTextField` имеет стили Plain и Filled. Вход и регистрация используют Filled: голубой primaryContainer, синяя обводка 1 dp, тёмные подписи и placeholder; ошибка окрашивает обводку и подпись в error. Остальные формы сохраняют Plain. Автономный AuthTextFieldsPreview показывает пустое, заполненное, ошибочное и disabled-состояния.
-- Общие компоненты не зависят от моделей приложения. Новые визуальные компоненты и чистые экраны имеют автономные Preview со значимыми состояниями.
-- Логотип внутри приложения — исходный пользовательский `WhoBusy.png`, без изменений сохранённый в `core/ui/src/main/res/drawable-nodpi/whobusy_logo.png`. `components/WhoBusyLogo.kt` показывает его на экранах входа и восстановления сессии без tint и имеет Preview. Календарная иллюстрация пустой доски остаётся отдельным WhoBusyCalendarBadge.
-- Значок запуска задан в `androidApp/src/main/AndroidManifest.xml` через `mipmap-anydpi/ic_launcher{,_round}.xml`: оба используют отдельный `androidApp/src/main/res/drawable-nodpi/whobusy_launcher_logo.png` — неизменённый пользовательский `WhoBusyAndroidAppLogo.png`. Файлы слоёв — `androidApp/src/main/res/drawable/ic_launcher_{foreground,background}.xml`: foreground с отступом 12% сохраняет знак внутри масок Android, фоновый bitmap заполняет края тем же изображением. Ресурс из core:ui внутри приложения не заменяется. При minSdk 34 используются адаптивные XML; старые density-specific WebP сохранены и не являются источником текущего логотипа. Цветной PNG не используется как монохромная маска.
-- Тексты приложения — `androidApp/src/main/res/values/{strings,auth_strings,spaces_strings,board_strings,event_strings,admin_strings}.xml`; общие — `core/ui/src/main/res/values/strings.xml` с префиксом `ui_`. Ошибки состояния представлены `@StringRes Int?`; UI разрешает их через stringResource. Domain от ресурсов Android не зависит.
-- `WhoBusyScreenLayout` объединяет статусный отступ, шапку и содержимое до нижней границы. `AppBottomBar` размещает панель поверх NavDisplay в прозрачном Box: 80% ширины, 64 dp высоты, радиус 25 dp, 10 dp снизу плюс navigation bar inset. Содержимое видно по бокам и ниже; у списка и FAB есть отступы для доступа к последним элементам.
+- Тема задаёт палитру владельцев, светлые заливки карточек, Material 3 и типографику. Компоненты: кнопки/FAB, поля, Tabs/BottomBar/TopBar, DateCell, EventCard/Chip, Avatar, SwitchRow, Notice, ListRow, SectionTitle, ColorPalette, SelectionMark, RadioRow, Toggle, ChoicePill, Logo и часовая сетка.
+- `components/WhoBusyIcon.kt` использует Material Icons через UiIcon: Filled и AutoMirrored ArrowBack, маркеры CheckCircle/RadioButtonUnchecked. Новые иконки выбираются из Material; редкие сторонние исключения требуют источника.
+- Общие строки/изображения — `shared/src/commonMain/composeResources/`: `values/{strings,auth_strings,spaces_strings,board_strings,event_strings,admin_strings,ui_strings}.xml`, `drawable/`, исходный архив Figma `files/design/`. Генерируется публичный `com.project.whobusy.resources.Res`. Состояния ошибок используют `StringResource?`, UI разрешает их через Compose Resources `stringResource`.
+- Логотип внутри приложения — неизменённый пользовательский WhoBusy.png, `composeResources/drawable/whobusy_logo.png`, компонент WhoBusyLogo без tint на входе/восстановлении. WhoBusyCalendarBadge остаётся отдельной календарной иллюстрацией.
+- Android launcher задан в `androidApp/src/main/AndroidManifest.xml` через `mipmap-anydpi/ic_launcher{,_round}.xml`; использует `androidApp/src/main/res/drawable-nodpi/whobusy_launcher_logo.png` и `drawable/ic_launcher_{foreground,background}.xml`. Launcher и backup-ресурсы не переносятся в Compose Resources.
+- WhoBusyTextField имеет Plain/Filled; вход и регистрация используют Filled с голубой заливкой, синей рамкой 1 dp и красной ошибкой. Общие компоненты и чистые экраны имеют автономные Preview значимых состояний.
+- WhoBusyScreenLayout объединяет статусный отступ, шапку и контент. AppBottomBar рисуется поверх NavDisplay: 80% ширины, высота 64 dp, радиус 25 dp, снизу 10 dp плюс navigation inset. Списки/FAB учитывают его перекрытие.
 
 ## Навигация и состояния
 
@@ -90,13 +86,13 @@ Metro поддерживает KMP, но код приложения пока о
 
 ## Авторизация и защищённое хранение
 
-`AuthRepository.logout()` теперь suspend и возвращает Result: состояние гостя публикуется после очистки DataStore. RemoteAuthRepository поддерживает login/register, restoreSession, logout и logoutAll. В ProfileScreen отдельная кнопка выхода на всех устройствах открывает подтверждение; ProfileViewModel блокирует повторный запрос, закрытие диалога и переходы во время выполнения. Ошибка logout-all оставляет текущую сессию и показывает сообщение. Моки не создают постоянную сессию и не обращаются к сети; оба вида выхода очищают только локальную моковую сессию.
+`AuthRepository.logout()` suspend и возвращает Result: состояние гостя публикуется после очистки DataStore. RemoteAuthRepository поддерживает login/register, restoreSession, logout и logoutAll. В ProfileScreen отдельная кнопка выхода на всех устройствах открывает подтверждение; ProfileViewModel блокирует повторный запрос, закрытие диалога и переходы во время выполнения. Ошибка logout-all оставляет текущую сессию и показывает сообщение. Моки не создают постоянную сессию и не обращаются к сети; оба вида выхода очищают только локальную моковую сессию.
 
 `AuthAPI` получает access_token/token_type/expires_in из JSON и значение refresh_token из Set-Cookie. Access JWT и пользователь остаются только в SessionStore. В EncryptedRefreshTokenStore записывается зашифрованный JSON с refresh и точным base URL; при смене сервера прежний токен не отправляется на другой адрес. Пароли, access и расшифровочный ключ в DataStore не хранятся.
 
-`storage/AndroidKeystoreTokenCipher.kt` создаёт неэкспортируемый AES-256 ключ AndroidKeyStore; `AesGcmTokenCipher.kt` использует AES/GCM/NoPadding, случайный 96-битный IV, 128-битный authentication tag и AAD с назначением/версией. Preferences DataStore хранит только byte[] envelope magic/version/IV/ciphertext/tag в `Context.noBackupFilesDir/datastore/auth_session.preferences_pb`; файл не переносится backup/device transfer. Криптография выполняется на IO. Повреждение файла/шифротекста или потеря ключа сбрасывает сохранённое значение, без хранения plaintext и без генерации нового ключа при чтении старого ciphertext. Новый ключ создаётся только при записи.
+`shared/src/androidMain/kotlin/com/project/whobusy/data/session/storage/AndroidKeystoreTokenCipher.kt` создаёт неэкспортируемый AES-256 ключ AndroidKeyStore; `AesGcmTokenCipher.kt` использует AES/GCM/NoPadding, случайный 96-битный IV, 128-битный authentication tag и AAD с назначением/версией. Preferences DataStore хранит только byte[] envelope magic/version/IV/ciphertext/tag в `Context.noBackupFilesDir/datastore/auth_session.preferences_pb`; файл не переносится backup/device transfer. Криптография выполняется на IO. Повреждение файла/шифротекста или потеря ключа сбрасывает сохранённое значение, без хранения plaintext и без генерации нового ключа при чтении старого ciphertext. Новый ключ создаётся только при записи.
 
-`RemoteSessionManager` сериализует обновление через Mutex. AuthenticatedHttpClient запрашивает действующий access, при 401 обновляет refresh и повторяет запрос один раз; 403/сетевые ошибки не запускают повтор мутации. Версия обновления позволяет объединить параллельные 401 даже при одинаковом JWT; generation не даёт ответу старой сессии затронуть новую. Ротация, фиксация нового refresh и публикация access защищены NonCancellable IO-транзакцией от отмены вызывающего coroutine. После повторного 401/отозванного refresh локальная сессия очищается.
+`RemoteSessionManager` сериализует обновление через Mutex. AuthenticatedHttpClient запрашивает действующий access, при 401 обновляет refresh и повторяет запрос один раз; 403/сетевые ошибки не запускают повтор мутации. Версия обновления позволяет объединить параллельные 401 даже при одинаковом JWT; generation не даёт ответу старой сессии затронуть новую. Ротация, фиксация нового refresh и публикация access защищены NonCancellable-транзакцией от отмены вызывающего coroutine; Android-хранилище выполняет дисковые/криптографические операции на IO. После повторного 401/отозванного refresh локальная сессия очищается.
 
 Клиент вручную передаёт refresh только в auth/refresh, auth/logout и PATCH auth/me (смена пароля должна сохранить текущую семью сессии); access/refresh для PATCH берутся одной атомарной парой. Это ограниченный transport cookie value, не общий persistent CookieJar. HTTPS обязателен, редиректы отключены. Обычный выход сначала завершает локальную durable-очистку; серверный отзыв выполняется best effort в application scope. Logout-all выполняется сериализованно и очищает локальную сессию после успешного ответа. Access-токены уже выпущенной сессии сервер допускает до exp, если аккаунт не заблокирован/удалён.
 
@@ -104,7 +100,7 @@ Metro поддерживает KMP, но код приложения пока о
 
 ## Календарь и формы
 
-Все маршруты — сериализуемые наследники ScreenTypes. Только Calendar/Calendars/Profile реализуют вложенный маркер BottomBarNavigatable. Он единственный определяет видимость панели. Остальные маршруты: Registration, BoardSettings, CreateSpace, JoinSpace, Invitations, SpaceDetails/Members/MemberRole/InviteMember/Settings/LeaveSpace, ProfileEditor, EventDetails/Editor/Visibility/SpaceVisibility/Dates, Users/UserEditor. Данные между экранами передаются полями маршрутов: spaceId/userId/eventId, ISO-дата редактора и occurrenceStart деталей плана. `EventRoutes.kt` строит EventDetails из id и начала выбранного вхождения; разные вхождения одной серии имеют разные route keys. Callbacks и модели с java.time в маршрутах не хранятся.
+Все маршруты — сериализуемые наследники ScreenTypes. Только Calendar/Calendars/Profile реализуют вложенный маркер BottomBarNavigatable. Он единственный определяет видимость панели. Остальные маршруты: Registration, BoardSettings, CreateSpace, JoinSpace, Invitations, SpaceDetails/Members/MemberRole/InviteMember/Settings/LeaveSpace, ProfileEditor, EventDetails/Editor/Visibility/SpaceVisibility/Dates, Users/UserEditor. Данные между экранами передаются полями маршрутов: spaceId/userId/eventId, ISO-дата редактора и occurrenceStart деталей плана. `EventRoutes.kt` строит EventDetails из id и начала выбранного вхождения; разные вхождения одной серии имеют разные route keys. Callbacks и предметные модели в маршрутах не хранятся; даты передаются ISO-строками.
 
 `TabNavigation.kt` сохраняет Calendar в основании и заменяет верхнюю вкладку без повторных entries. Back из Пространств/Профиля возвращает Доску. Создание/вступление открывает пространство, принятие приглашения обновляет членство; завершённое удаление/выход возвращает основную вкладку. Во время сохранения возврат блокируется. Root редактора также блокирует переходы к датам/видимости, Root деталей — к редактированию, пока операция выполняется или её результат ожидает обработки; callbacks проверяют актуальное состояние ViewModel. После сохранения/удаления плана закрывается его поток и обновляется календарь.
 
@@ -124,7 +120,7 @@ EventEditorViewModel объединяет Editor/Visibility/SpaceVisibility/Date
 
 День: часовая сетка, all-day, пересечения и текущее время. Неделя: семь столбцов и полосы all-day, нажатие на событие открывает детали, на свободную область дня — день. Месяц: сетка, точки, выделенные диапазоны all-day и планы выбранной даты; all-day представлен компактной строкой. Повторения: DAILY/WEEKLY/MONTHLY/YEARLY, будни через BYDAY, INTERVAL/COUNT/UNTIL для поддерживаемого подмножества RRULE; месяц с отсутствующим числом и невисокосный 29 февраля пропускаются. Изменение/удаление касается всей серии, отдельных исключений нет.
 
-День и неделя используют `core:ui/components/WhoBusyTimeGrid.kt`: часы 00–24 создаются в LazyColumn, непрерывные карточки событий размещаются отдельным слоем WhoBusyTimeGridItem. Композиция карточки существует только при пересечении с viewport; многочасовое событие остаётся видимым и доступным для нажатия после ухода его начального часа за экран. Общий scrollable на контейнере прокручивает и фон, и карточки одним LazyListState, включая жест поверх события; доступны семантические ScrollBy/ScrollToIndex. `key(resetKey)` сбрасывает позицию при смене дня/недели, а rememberLazyListState восстанавливает её при пересоздании. Нижний отступ под overlay-бар находится за границей 24:00.
+День и неделя используют `core/ui/components/WhoBusyTimeGrid.kt`: часы 00–24 создаются в LazyColumn, непрерывные карточки событий размещаются отдельным слоем WhoBusyTimeGridItem. Композиция карточки существует только при пересечении с viewport; многочасовое событие остаётся видимым и доступным для нажатия после ухода его начального часа за экран. Общий scrollable на контейнере прокручивает и фон, и карточки одним LazyListState, включая жест поверх события; доступны семантические ScrollBy/ScrollToIndex. `key(resetKey)` сбрасывает позицию при смене дня/недели, а rememberLazyListState восстанавливает её при пересоздании. Нижний отступ под overlay-бар находится за границей 24:00.
 
 `TimeGridViewport.kt` задаёт общую пиксельную геометрию линий, карточек и текущего времени: округляются абсолютные координаты начала и конца, высота равна их разнице. Подписи центрируются на линиях; минимальная высота в dp и вычитание отступа из длительности не применяются. Если субпиксельный интервал округлился в ноль, карточка показывает маркер высотой 1 px. Короткие блоки показывают только помещающийся текст либо цвет с accessibility-описанием; полные подробности доступны по нажатию. Группировка событий по дням и пересечениям кешируется через remember.
 
@@ -150,68 +146,63 @@ EventEditorViewModel объединяет Editor/Visibility/SpaceVisibility/Date
 
 ## Где менять и как проверять
 
+Все предметные пути таблицы относятся к `shared/src/commonMain/kotlin/com/project/whobusy/`.
+
 | Задача | Места |
 | --- | --- |
-| Новый UI-компонент | core:ui/components + автономный Preview |
-| Новый экран | presentation/feature/ui + viewmodel/State/Command; маршрут navigation |
-| Новые данные | domain + mock data + remote + DI; сверяй DTO и маршруты с API-контрактом |
-| Авторизация/refresh | data/session, storage, AuthAPI, AuthenticatedHttpClient, SessionModule; JVM и Android storage-тесты |
-| Даты/повторения/геометрия | calendar/model, соответствующие JVM-тесты |
-| Тексты | values/*.xml соответствующей фичи; stringResource в UI |
-| Зависимости | gradle/libs.versions.toml, build.gradle.kts модулей |
-| SDK/сборка | androidApp/build.gradle.kts, core/ui/build.gradle.kts, shared/build.gradle.kts, webApp/build.gradle.kts, wrapper, daemon JVM properties |
-| Общий UI и Web-пример | shared/src/commonMain/, webApp/src/webMain/; код приложения сюда пока не перенесён |
+| UI-компонент | `core/ui/components/` + автономный Preview |
+| Экран/состояние/навигация | `presentation/<feature>/{ui,viewmodel}/`, `presentation/navigation/` |
+| Модели/данные/API | `domain/`, `data/{mock,remote,repository}/`, `di/`; контракт API_CONTRACT |
+| Android refresh/хранилище/HTTP | Общие `data/session/` и контракты storage; реализации `shared/src/androidMain/`; SessionModule/NetworkModule |
+| Даты/повторения/геометрия | `time/`, `presentation/calendar/model/`, `core/ui/components/TimeGridViewport.kt` |
+| Тексты/изображения | `shared/src/commonMain/composeResources/`, `Res`, `StringResource` |
+| Конфигурация платформ | `androidApp/{build.gradle.kts,src/main/}`, `shared/build.gradle.kts`, `webApp/`, каталог версий |
+| Browser REST/Back | Нужные browser-адаптеры пока не реализованы; текущая точка входа App/DemoAppGraph, `presentation/platform/` |
 
 ```bash
 ./gradlew :androidApp:assembleDebug :androidApp:assembleRelease
-./gradlew :androidApp:testDebugUnitTest :androidApp:lintDebug
-./gradlew :core:ui:testDebugUnitTest
-./gradlew :androidApp:assembleDebugAndroidTest
-./gradlew :androidApp:connectedDebugAndroidTest
-./gradlew :shared:compileAndroidMain
-./gradlew :webApp:compileKotlinJs :webApp:compileKotlinWasmJs
+./gradlew :shared:compileAndroidMain :shared:compileKotlinJs :shared:compileKotlinWasmJs
+./gradlew :shared:testAndroidHostTest :androidApp:testDebugUnitTest
+./gradlew :shared:jsNodeTest
+./gradlew :androidApp:lintDebug
+./gradlew :shared:assembleAndroidDeviceTest :androidApp:assembleDebugAndroidTest
+./gradlew :androidApp:connectedDebugAndroidTest -PwhoBusy.useMockData=true
+./gradlew :webApp:jsBrowserDevelopmentWebpack :webApp:wasmJsBrowserDevelopmentWebpack
 ./gradlew :webApp:jsBrowserDevelopmentRun
 ./gradlew :webApp:wasmJsBrowserDevelopmentRun
 ```
 
-Release APK не подписан: конфигурация ключа релиза не задана. `connectedDebugAndroidTest` требует устройство или эмулятор и запускает инструментальные тесты.
+Release APK не подписан. `assemble…Test` только собирает инструментальные APK; `connected…Test` требует устройство/эмулятор и запускает тесты.
 
-JVM-тесты в `androidApp/src/test/` проверяют аккаунты/нормализацию/пароли, пространства/роли/приглашения/последнего администратора, видимость/CRUD/отсоединение планов, повторения и даты, ViewModel/состояния завершения/черновик, сериализацию аргументов маршрутов и разные вхождения одной серии. Проверяются сохранность результата без UI, подтверждение ResultHandled и блокировка повторной операции до подтверждения. MockEngine-тесты RemoteAuth/Calendar/Workspace проверяют актуальные DTO, cookie, маршруты, фильтры, права и обработку ошибок API 2.0. RemoteSessionManagerTest проверяет объединение параллельных 401, ротацию при отмене coroutine, привязку refresh к серверу, согласованность пары access/refresh, отклонение ответа старой сессии и сериализацию logout-all с новым входом. AppViewModelTest покрывает восстановление/повтор/новый вход, ProfileViewModelTest — подтверждение, ошибку и блокировку повторного выхода. Эти тесты используют MockEngine, а не живой сервер.
+- `shared/src/commonTest/`: календарные границы и pager, повторения, обрезка/пересечения, формы, геометрия часовой сетки, даты/форматирование/DST, API URL, сериализация всех маршрутов без reflection и smoke-тест общего Metro-графа. Используется kotlin.test; эти исходники входят в host-тесты, запускаются через `:shared:jsNodeTest` и компилируются для Wasm. Wasm/Skiko runtime рассчитан на браузер, поэтому Node-окружение тестов для Wasm не подключено.
+- `shared/src/androidHostTest/`: существующие JVM-тесты аккаунтов, ролей/пространств/приглашений, CRUD/видимости/отсоединения, REST через Ktor MockEngine, сессии/refresh, storage, ViewModel, StateFlow результатов и аргументов маршрутов. Сервер не используется. RemoteSessionManagerTest проверяет параллельные 401, атомарную ротацию/запись, отмену, смену сервера и поколений сессии, logout-all.
+- `shared/src/androidDeviceTest/.../EncryptedRefreshTokenStoreAndroidTest.kt`: настоящий Keystore и файловый DataStore, неэкспортируемый AES-256 ключ, IV, повторное открытие, отсутствие plaintext, очистка, повреждение и потеря ключа.
+- `shared/src/androidDeviceTest/.../DesignGalleryTest.kt`: автономный рендер общих экранов через createComposeRule без MainActivity/DI, с доступом к внутренним preview-данным; скриншоты в external files/gallery тестового приложения, без pixel golden comparison.
+- `androidApp/src/androidTest/`: AppNavigationTest, CalendarPagerTest, CalendarTimelineTest, LazyCollectionsTest и EventNavigationDuringSaveTest проверяют реальный Android UI, восстановление Activity, интервалы/скролл, lazy-элементы и переходы при сохранении. Скриншоты сохраняются в external files/screenshots.
+- `androidApp/src/test/`: оставшийся host smoke-тест; предметные и ViewModel-тесты находятся в shared.
 
-Android-сценарии: `androidApp/src/androidTest/.../AppNavigationTest.kt` — шесть потоков регистрации/доски/пространств/приглашений/планов/профиля/аккаунтов, восстановление Activity, видимость и геометрия overlay. Проверяется пересоздание открытых деталей/редактора, сохранение профиля и плана и отсутствие повторного возврата после пересоздания Activity. Helper сохраняет PNG в external files/screenshots; для выгрузки запускай instrumentation после установки APK и забирай файлы до удаления приложения Gradle. `DesignGalleryTest#galleryAllScreens` отдельно отрисовывает 28 состояний на автономных данных, сохраняет PNG в external files/gallery; это визуальная проверка, без pixel golden comparison.
+Форматирование выполняется штатным Reformat Code из Android Studio по `.idea/codeStyles/Project.xml` (`KOTLIN_OFFICIAL`) и `.editorconfig`: 4 пробела, 120 символов, trailing comma, явные импорты. Ktlint для переформатирования не используется. CLI-форматтер Studio при установленной IDE:
 
-`CalendarPagerTest.kt` проверяет реальные свайпы всех четырёх pager, переходы вперёд/назад, выбор даты и режима, Today, восстановление после свайпа, конец февраля и независимость вертикальной прокрутки часов. CalendarPagerPeriodTest проверяет привязку дат к страницам и календарные границы; CalendarLoaderTest/CalendarViewModelTest — полное окно соседних месяцев, переиспользование данных и гонки загрузок.
-
-`CalendarTimelineTest.kt` проверяет реальные границы карточек дня/недели относительно линий часов, 15-минутный интервал и конец в 24:00, непрерывность многочасовой карточки, нажатие и прокрутку поверх неё, исключение невидимых событий, восстановление прокрутки через StateRestorationTester. Чистая геометрия и округление покрыты `core/ui/src/test/.../TimeGridViewportTest.kt`; обрезка многодневного события — CalendarDatesTest.
-
-`LazyCollectionsTest.kt` использует 100 all-day событий, 100 владельцев и 200 аккаунтов: дальние элементы отсутствуют в композиции до прокрутки, после неё доступны для нажатия, а часовая сетка остаётся видимой.
-
-`data/session/storage/EncryptedRefreshTokenStoreAndroidTest.kt` запускается с настоящим Android Keystore и файловым DataStore: проверяет неэкспортируемый AES-256 ключ, разные IV, повторное открытие хранилища, отсутствие plaintext в файле, очистку, повреждение данных и потерю ключа. JVM-тесты storage отдельно проверяют AES-GCM envelope и транзакции DataStore.
-
-`EventNavigationDuringSaveTest.kt` удерживает сохранение/удаление через CompletableDeferred в тестовом CalendarRepository: реальные Root не вызывают переходы к датам/видимости/редактированию и возврат, пока операция выполняется. После завершения результат подтверждается и callback вызывается один раз.
-
-Форматирование `.kt` и `.kts` выполняется штатным Reformat Code из Android Studio (у пользователя назначен на Ctrl+S). `.idea/codeStyles/` закрепляет `KOTLIN_OFFICIAL`; `.editorconfig` задаёт 4 пробела, 120 символов, trailing comma и явные импорты. Ktlint не используется для переформатирования, поскольку иначе расставляет переносы. Для [CLI-форматтера Studio](https://www.jetbrains.com/help/idea/command-line-formatter.html) укажи путь к установленной IDE в `ANDROID_STUDIO_HOME`:
 ```bash
-"$ANDROID_STUDIO_HOME/bin/format.sh" -s .idea/codeStyles/Project.xml -r -m '*.kt,*.kts' androidApp/src core/ui/src build.gradle.kts settings.gradle.kts androidApp/build.gradle.kts core/ui/build.gradle.kts
+"$ANDROID_STUDIO_HOME/bin/format.sh" -s .idea/codeStyles/Project.xml -r -m '*.kt,*.kts' androidApp/src shared/src webApp/src build.gradle.kts settings.gradle.kts androidApp/build.gradle.kts shared/build.gradle.kts webApp/build.gradle.kts
 ```
-Для проверки без изменения файлов добавь `-d`; повторный запуск после форматирования должен завершаться без различий. Не форматируй исходники одновременно со сборкой или Lint.
 
-Корневой `.gitignore` исключает сборки и кеши всех модулей, локальные SDK/env/signing-файлы, персональные настройки Studio, логи и дампы. Gradle Wrapper, `.editorconfig`, `.idea/codeStyles/`, исходники и документация остаются доступными для коммита; примеры `.env.example`/`.env.sample`/`.env.template` разрешены. Правила проверяются через `git check-ignore --no-index -v`. `.gitignore` не прекращает отслеживание ранее добавленных файлов; локальные IDE-файлы следует проверять отдельно от правил исключения.
+Для проверки без изменения файлов добавь `-d`; не форматируй исходники одновременно со сборкой/Lint.
+
+Корневой `.gitignore` исключает сборки/кеши, локальные SDK/env/signing-файлы, персональные настройки Studio и логи. Wrapper, исходники, документация и проектные codeStyles отслеживаются; `.env.example`/`.sample`/`.template` разрешены. Для аудита правил используй `git check-ignore --no-index -v`.
 
 ## Выполненные проверки
 
-После перехода Android-приложения на Metro 1.4.5 выполнены следующие проверки:
-
-- Собраны Debug APK, неподписанный Release APK с R8 и APK инструментальных тестов: `:androidApp:assembleDebug`, `:androidApp:assembleRelease`, `:androidApp:assembleDebugAndroidTest`.
-- `:androidApp:testDebugUnitTest` и `:core:ui:testDebugUnitTest`: запущены 174 и 7 JVM-тестов соответственно, все прошли без пропусков.
-- Android Lint: 0 ошибок, 84 предупреждения.
-- Инструментальные тесты после перехода на Metro не запускались: сборка AndroidTest APK подтверждает только компиляцию.
-- Web-приложение и Android-экраны на устройстве при переходе на Metro вручную не проверялись.
-
-При первоначальном переносе в WhoBusy2 также скомпилированы Android-цель `shared` и JavaScript/Wasm-цели `shared` и `webApp`; при замене DI эти проверки не повторялись. Штатный CLI-форматтер Studio не смог запуститься в sandbox из-за запрета Unix domain socket (`Operation not permitted`); успешная проверка форматирования не заявляется.
-
-Прежние прогоны эмулятора, визуальные проверки 28 экранов, проверки форматтером и операции на живом API относятся к исходному Android-проекту WhoBusy. Их нельзя считать проверками текущего KMP-проекта. Дата и исходный backend snapshot, на котором основан API-контракт, сохранены в [API_CONTRACT.md](API_CONTRACT.md).
+- `:shared:testAndroidHostTest`: запущены 193 теста общего кода, ViewModel, data и Android storage; все прошли без пропусков. Проверены сохранение refresh при отмене и прекращение отменённого вызова после защищённой ротации/восстановления/очистки.
+- `:shared:jsNodeTest`: запущены 48 общих тестов под Node.js, все прошли без пропусков, включая Metro-граф/ViewModel, сериализацию маршрутов, региональные зоны и DST. Mocha timeout 30 секунд учитывает первую инициализацию timezone/графа.
+- `:androidApp:testDebugUnitTest`: запущен оставшийся JVM smoke-тест Android-host, прошёл.
+- `:shared:compileTestKotlinWasmJs`: тестовые исходники скомпилированы для Wasm; это не запуск тестов. Node-runtime Wasm/Skiko для данного UI-модуля не поддерживается; браузерные Wasm-тесты не запускались.
+- Собраны Android Debug, unsigned Release с R8, инструментальные APK `androidApp` и `shared`, Web development webpack для JavaScript и Wasm. Инструментальные тесты на устройстве и ручные UI-сценарии в браузере не запускались; live REST повторно не проверялся.
+- `:androidApp:lintDebug`: 0 ошибок, 37 предупреждений. Webpack сохраняет предупреждения сторонних модулей/source maps и dynamic dependency, сборку они не блокируют.
+- Проверены локальные Markdown-ссылки, наличие перенесённых исходников/ресурсов и `git diff --check`; в commonMain нет импортов Android/JVM API. CLI Reformat Code Android Studio не запустился из-за read-only IDE cache/запрета Unix sockets в sandbox; Ktlint не применялся.
 
 ## Ограничения
 
-Моковые данные остаются в памяти; постоянный пользовательский кеш и offline CRUD не реализованы. В remote сохраняется только зашифрованный refresh, остальное повторно загружается с сервера. Нет исключений отдельного повторения и переноса существующего плана между пространствами. По умолчанию Android-сборка использует REST; `-PwhoBusy.useMockData=true` переключает все три репозитория в моковый режим. Web содержит только исходный пример и не подключён к предметным репозиториям. Старые методы выбора ownerIds и VisibilityRequestDTO сохранены для совместимости, из текущей навигации не используются; remote возвращает UnsupportedOperationException вместо обращений к отсутствующим маршрутам. Создание неактивного аккаунта выполняется POST → PATCH и не является одной серверной транзакцией.
+Web работает только с моками в памяти: browser REST/auth, защищённое управление cookie, синхронизация сессии между вкладками, History API, browser Back и deep links не подключены. Android сохраняет только зашифрованный refresh; постоянный кеш планов и offline CRUD отсутствуют. Моковые данные сбрасываются вместе с процессом или перезагрузкой страницы.
+
+Нет исключений отдельного повторения и переноса существующего плана между пространствами. Форматирование покрывает текущие русские шаблоны. iOS/desktop цели и их реализации не настроены. Старые методы ownerIds/VisibilityRequestDTO сохранены для совместимости; remote возвращает UnsupportedOperationException для отсутствующих API-маршрутов. Создание неактивного аккаунта выполняется POST → PATCH и не является одной серверной транзакцией.

@@ -1,11 +1,11 @@
 # Источник интерфейса
 
 Актуальный макет: [WhoBusy · Пространства, страница 02](https://www.figma.com/design/dDatbSFzoHbGIn2PWUqZnx?node-id=14-90).
-Android-приложение в `androidApp` использует 28 экранов этой страницы. В `shared` и `webApp` пока остаётся исходный пример Compose Multiplatform; эти экраны в общий код не переносились. Контекст слоёв и screenshots получены через Figma MCP; прежняя страница 0:1 и архив FunProject-Mobile-Figma.zip описывают старую механику календарей коллег.
+Общий интерфейс в `shared` реализует 28 экранов этой страницы и используется Android-host `androidApp` и браузерным `webApp`. Web подключает общие экраны через demo-граф с моками в памяти. Контекст слоёв и screenshots получены через Figma MCP; прежняя страница 0:1 и архив FunProject-Mobile-Figma.zip описывают старую механику календарей коллег.
 
 ## Соответствие экранов
 
-Пути относительно `androidApp/src/main/java/com/project/whobusy/presentation/`.
+Пути относительно `shared/src/commonMain/kotlin/com/project/whobusy/presentation/`.
 
 | № / Figma node | Состояние | Реализация |
 | --- | --- | --- |
@@ -43,13 +43,14 @@ Android-приложение в `androidApp` использует 28 экран�
 ## Токены, компоненты и адаптация
 
 - Основа: 390 × 844. Используются dp/sp, системные отступы Android, прокрутка и IME padding. Верхняя панель — 68 dp плюс системный status inset (в макете вместе 92 px). Системные часы/батарея/жестовая полоса остаются нативными.
-- Primary `#2481CC`, header `#517FA4`, text `#17212B`, secondary `#72808D`, background `#F1F3F5`, divider `#E7EBEF`. Цвета владельцев и светлые заливки — в теме `core:ui`.
-- Кнопки высотой 50 dp, радиус 12 dp; поля с подписью высотой от 64 dp, радиус 12 dp; notice с радиусом 12 dp. По указанию пользователя поля входа и регистрации используют стиль Filled: светло-голубая заливка, синяя обводка 1 dp и тёмные подписи; при ошибке обводка и подпись красные. Общие строки списка, заголовки разделов, палитра и выбор радиокнопки находятся в `core:ui/components/`.
+- Primary `#2481CC`, header `#517FA4`, text `#17212B`, secondary `#72808D`, background `#F1F3F5`, divider `#E7EBEF`. Цвета владельцев и светлые заливки — в общей теме `shared/src/commonMain/kotlin/com/project/whobusy/core/ui/theme/`.
+- Кнопки высотой 50 dp, радиус 12 dp; поля с подписью высотой от 64 dp, радиус 12 dp; notice с радиусом 12 dp. По указанию пользователя поля входа и регистрации используют стиль Filled: светло-голубая заливка, синяя обводка 1 dp и тёмные подписи; при ошибке обводка и подпись красные. Общие строки списка, заголовки разделов, палитра и выбор радиокнопки находятся в `shared/src/commonMain/kotlin/com/project/whobusy/core/ui/components/`.
 - Иконки адаптированы к стандартному набору [Material Icons для Compose](https://developer.android.com/develop/ui/compose/resources#icons): общий `UiIcon` отображает `ImageVector` из `Icons.Filled`, стрелка назад использует `Icons.AutoMirrored.Filled.ArrowBack`. Размеры значков и областей нажатия задаются компонентами; маркеры выбора — Material CheckCircle/RadioButtonUnchecked. Для текущих значков сторонних исключений нет. Новые иконки выбираются из Material; при отсутствии подходящей ищется готовый значок в интернете с указанным источником, без собственного рисования.
-- Экспорты Figma сохранены в `core/ui/src/main/assets/design/` как архив источника. Цветовые свотчи и белый thumb переключателя остаются декоративными ресурсами в `core/ui/src/main/res/drawable/`. Скриншоты макета не используются как UI.
-- Внутри приложения компонент WhoBusyLogo использует предоставленный `WhoBusy.png`: неизменённый исходник хранится в `core/ui/src/main/res/drawable-nodpi/whobusy_logo.png` и отображается на входе и при восстановлении сессии. Для адаптивного значка рабочего стола отдельно используется пользовательский `WhoBusyAndroidAppLogo.png`, без изменений сохранённый в `androidApp/src/main/res/drawable-nodpi/whobusy_launcher_logo.png`; предметная календарная иллюстрация пустой доски остаётся отдельной.
-- Для дат/времени применяются нативные Compose picker-диалоги. Интервалы all-day хранят конец исключительно, редактор показывает последний включённый день.
+- Экспорты Figma сохранены в `shared/src/commonMain/composeResources/files/design/` как архив источника. Цветовые свотчи и белый thumb переключателя остаются декоративными ресурсами в `shared/src/commonMain/composeResources/drawable/`. Скриншоты макета не используются как UI.
+- Внутри приложения компонент WhoBusyLogo использует предоставленный `WhoBusy.png`: неизменённый исходник хранится в `shared/src/commonMain/composeResources/drawable/whobusy_logo.png` и отображается на входе и при восстановлении сессии. Для адаптивного значка рабочего стола отдельно используется пользовательский `WhoBusyAndroidAppLogo.png`, без изменений сохранённый в `androidApp/src/main/res/drawable-nodpi/whobusy_launcher_logo.png`; предметная календарная иллюстрация пустой доски остаётся отдельной.
+- Для дат/времени применяются общие Material 3 Compose picker-диалоги; преобразование выбранного дня выполняется через UTC без сдвига даты. Интервалы all-day хранят конец исключительно, редактор показывает последний включённый день.
 - Плавающая панель сохраняет поведение [GameHub / BottomControl](https://github.com/Gaalexx/GameHub/blob/master/app/src/main/java/com/project/gamehub/presentation/navigation/BottomControl.kt): ширина 80%, высота 64 dp, радиус 25 dp, подвижный полупрозрачный индикатор. Три вкладки: Доска, Пространства, Профиль.
 - Панель рисуется поверх `NavDisplay`, по бокам и ниже видно содержимое. Отступ снизу 10 dp плюс системный inset. Только маршруты с маркером `ScreenTypes.BottomBarNavigatable` показывают бар; формы, настройки и детали его не показывают.
 - Даты, число пространств, роли и содержимое — динамические данные. Seed-пространства названы «Команда WhoBusy», «Семья», «Проект», «Друзья»; демособытия привязаны к текущему дню.
+- Строки, изображения и декоративные drawable общие: `shared/src/commonMain/composeResources/`, `com.project.whobusy.resources.Res` и Compose Resources. Системный значок запуска и ресурсы Android-host остаются в `androidApp/src/main/res/`.
 - Все чистые экраны и новые визуальные компоненты имеют автономные Compose Preview. Проверки сборки и выполнения сценариев описаны в [AGENT_MAP.md](AGENT_MAP.md).

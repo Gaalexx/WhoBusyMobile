@@ -1,18 +1,17 @@
 package com.project.whobusy
 
-import androidx.lifecycle.SavedStateHandle
-import androidx.lifecycle.ViewModelProvider
-import androidx.lifecycle.ViewModelStore
-import androidx.lifecycle.viewmodel.initializer
-import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.compose.ui.test.hasClickAction
 import androidx.compose.ui.test.hasText
 import androidx.compose.ui.test.junit4.createComposeRule
 import androidx.compose.ui.test.onNodeWithContentDescription
 import androidx.compose.ui.test.performClick
 import androidx.compose.ui.test.performScrollTo
+import androidx.lifecycle.SavedStateHandle
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.ViewModelStore
+import androidx.lifecycle.viewmodel.initializer
+import androidx.lifecycle.viewmodel.viewModelFactory
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.data.mock.DemoAccount
 import com.project.whobusy.data.mock.MockAccountStore
@@ -31,6 +30,21 @@ import com.project.whobusy.presentation.event.ui.EventDetailsRoot
 import com.project.whobusy.presentation.event.ui.EventEditorRoot
 import com.project.whobusy.presentation.event.viewmodel.EditorCommand
 import com.project.whobusy.presentation.event.viewmodel.EventEditorViewModel
+import com.project.whobusy.resources.Res
+import com.project.whobusy.resources.plan_date_range
+import com.project.whobusy.resources.plan_edit_action
+import com.project.whobusy.resources.plan_visibility
+import com.project.whobusy.resources.ui_action_back
+import com.project.whobusy.time.Clock
+import com.project.whobusy.time.Instant
+import com.project.whobusy.time.LocalDate
+import com.project.whobusy.time.ZoneOffset
+import com.project.whobusy.time.atStartOfDay
+import com.project.whobusy.time.now
+import com.project.whobusy.time.parse
+import com.project.whobusy.time.plusDays
+import com.project.whobusy.time.value
+import java.util.concurrent.atomic.AtomicInteger
 import kotlinx.coroutines.CompletableDeferred
 import kotlinx.coroutines.runBlocking
 import org.junit.After
@@ -40,11 +54,6 @@ import org.junit.Assert.assertNull
 import org.junit.Rule
 import org.junit.Test
 import org.junit.runner.RunWith
-import java.time.Clock
-import java.time.Instant
-import java.time.LocalDate
-import java.time.ZoneOffset
-import java.util.concurrent.atomic.AtomicInteger
 
 @RunWith(AndroidJUnit4::class)
 class EventNavigationDuringSaveTest {
@@ -52,7 +61,6 @@ class EventNavigationDuringSaveTest {
     val composeRule = createComposeRule()
 
     private val viewModelStore = ViewModelStore()
-    private val context = InstrumentationRegistry.getInstrumentation().targetContext
 
     @After
     fun clearViewModels() {
@@ -101,10 +109,10 @@ class EventNavigationDuringSaveTest {
         }
         composeRule.waitUntil(5_000) { viewModel.state.value.isSaving }
 
-        composeRule.onNode(hasText(context.getString(R.string.plan_date_range)) and hasClickAction())
+        composeRule.onNode(hasText(resourceText(Res.string.plan_date_range)) and hasClickAction())
             .performScrollTo()
             .performClick()
-        composeRule.onNode(hasText(context.getString(R.string.plan_visibility)) and hasClickAction())
+        composeRule.onNode(hasText(resourceText(Res.string.plan_visibility)) and hasClickAction())
             .performScrollTo()
             .performClick()
         composeRule.onNodeWithContentDescription(backLabel()).performClick()
@@ -166,7 +174,7 @@ class EventNavigationDuringSaveTest {
         composeRule.runOnUiThread { viewModel.onEvent(CalendarCommand.DeleteEvent(event.id)) }
         composeRule.waitUntil(5_000) { viewModel.state.value.isSaving }
 
-        composeRule.onNodeWithContentDescription(context.getString(R.string.plan_edit_action)).performClick()
+        composeRule.onNodeWithContentDescription(resourceText(Res.string.plan_edit_action)).performClick()
         composeRule.onNodeWithContentDescription(backLabel()).performClick()
         assertEquals(0, editCount.get())
         assertEquals(0, backCount.get())
@@ -181,7 +189,7 @@ class EventNavigationDuringSaveTest {
         assertNull(viewModel.state.value.result)
     }
 
-    private fun backLabel(): String = context.getString(com.project.whobusy.core.ui.R.string.ui_action_back)
+    private fun backLabel(): String = resourceText(Res.string.ui_action_back)
 
     private class GatedCalendarRepository(
         private val base: CalendarRepository,

@@ -20,7 +20,6 @@ import androidx.compose.ui.test.swipeLeft
 import androidx.compose.ui.test.swipeRight
 import androidx.compose.ui.test.swipeUp
 import androidx.test.ext.junit.runners.AndroidJUnit4
-import androidx.test.platform.app.InstrumentationRegistry
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.presentation.calendar.model.CalendarMode
 import com.project.whobusy.presentation.calendar.model.dayTitle
@@ -28,7 +27,20 @@ import com.project.whobusy.presentation.calendar.model.weekStart
 import com.project.whobusy.presentation.calendar.preview.CalendarPreviewData
 import com.project.whobusy.presentation.calendar.ui.CalendarScreen
 import com.project.whobusy.presentation.calendar.viewmodel.CalendarCommand
-import java.time.LocalDate
+import com.project.whobusy.resources.Res
+import com.project.whobusy.resources.action_today
+import com.project.whobusy.time.LocalDate
+import com.project.whobusy.time.atStartOfDay
+import com.project.whobusy.time.minusDays
+import com.project.whobusy.time.now
+import com.project.whobusy.time.of
+import com.project.whobusy.time.plusDays
+import com.project.whobusy.time.plusMonths
+import com.project.whobusy.time.plusWeeks
+import com.project.whobusy.time.toEpochDay
+import com.project.whobusy.time.value
+import com.project.whobusy.time.withDayOfMonth
+import org.jetbrains.compose.resources.StringResource
 import org.junit.Assert.assertEquals
 import org.junit.Assert.assertTrue
 import org.junit.Rule
@@ -127,7 +139,7 @@ class CalendarPagerTest {
         swipeForward("calendar-day-pager")
         assertDate(initial.plusDays(1))
 
-        composeRule.onNodeWithText(text(R.string.action_today)).performClick()
+        composeRule.onNodeWithText(text(Res.string.action_today)).performClick()
         assertDate(today)
         assertPage(CalendarMode.Day, today)
         swipeForward("calendar-day-pager")
@@ -214,7 +226,7 @@ class CalendarPagerTest {
         WhoBusyTheme {
             CalendarScreen(
                 CalendarPreviewData.state.copy(
-                    selectedDate = LocalDate.ofEpochDay(selectedDate.value),
+                    selectedDate = LocalDate.fromEpochDays(selectedDate.value),
                     mode = selectedMode.value,
                 ),
                 onEvent = { command ->
@@ -247,7 +259,7 @@ class CalendarPagerTest {
     }
 
     private fun assertDate(date: LocalDate) {
-        composeRule.runOnIdle { assertEquals(date, LocalDate.ofEpochDay(selectedDate.value)) }
+        composeRule.runOnIdle { assertEquals(date, LocalDate.fromEpochDays(selectedDate.value)) }
     }
 
     private fun assertPage(mode: CalendarMode, date: LocalDate) {
@@ -289,6 +301,5 @@ class CalendarPagerTest {
         return "calendar-page-${mode.name}-$period"
     }
 
-    private fun text(resource: Int): String =
-        InstrumentationRegistry.getInstrumentation().targetContext.getString(resource)
+    private fun text(resource: StringResource): String = resourceText(resource)
 }

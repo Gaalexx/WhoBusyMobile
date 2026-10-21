@@ -9,6 +9,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
@@ -26,6 +27,7 @@ import androidx.compose.ui.tooling.preview.Preview
 import com.project.whobusy.core.ui.components.UiIcon
 import com.project.whobusy.core.ui.components.WhoBusyAvatar
 import com.project.whobusy.core.ui.components.WhoBusyIcon
+import com.project.whobusy.core.ui.components.WhoBusyLogo
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.domain.model.CalendarUser
 import com.project.whobusy.presentation.calendar.preview.CalendarPreviewData
@@ -55,7 +57,7 @@ internal fun DesktopNavigationRail(
             .padding(horizontal = 4.dp, vertical = 22.dp).testTag("desktop-navigation"),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
-        WhoBusyAvatar("W", DesktopPalette.Accent)
+        WhoBusyLogo(Modifier.size(56.dp))
         Spacer(Modifier.height(48.dp))
         DesktopRailItem(
             stringResource(Res.string.screen_calendar), UiIcon.Calendar,

@@ -5,3 +5,9 @@ html, body {
     padding: 0;
     overflow: hidden;
 }
+
+.startup-logo {
+    display: block;
+    margin: 0 auto 20px;
+    object-fit: contain;
+}

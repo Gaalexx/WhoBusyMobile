@@ -14,7 +14,7 @@ WhoBusy реализует пространства из Figma 02 (28 мобил
 | --- | --- |
 | `shared` | KMP-библиотека для Android, JavaScript и Wasm: общий код в `commonMain`, адаптеры Android в `androidMain`, browser DI/HTTP/BackHandler в `webMain`, Fetch engine actual в `jsMain`/`wasmJsMain` |
 | `androidApp` | Android-host `com.project.whobusy`, зависит от `shared`; Application, Activity, AppGraph, BuildConfig и ресурсы запуска |
-| `webApp` | `webApp/src/webMain/kotlin/com/gaalex/whobusymp/main.kt` вызывает `shared.App` через ComposeViewport; JavaScript/Wasm, browser-граф и отдельные build-параметры, dev-server same-origin API proxy |
+| `webApp` | `webApp/src/webMain/kotlin/com/gaalex/whobusymp/main.kt` вызывает `shared.App` через ComposeViewport; JavaScript/Wasm, browser-граф и отдельные build-параметры, dev-server same-origin API proxy, экспорт production-пакета для FunProject |
 
 Версии задаются в `gradle/libs.versions.toml`: Kotlin 2.4.20, AGP 9.1.1, Compose Multiplatform 1.12.1, Metro 1.4.5, kotlinx-datetime 0.8.0. Wrapper — Gradle 9.5.1, daemon — JDK 21. Android JVM target 17; SDK compile 37, target 36, min 34. Metro compiler plugin подключён в `shared` и `androidApp`, KSP и Dagger/Hilt не используются. iOS и desktop цели не объявлены.
 
@@ -30,7 +30,7 @@ WhoBusy реализует пространства из Figma 02 (28 мобил
 | Навигация | `presentation/navigation/` | ScreenTypes, NavDisplay, overlay-бар, область ViewModel сессии |
 | Вход и регистрация | `presentation/{login,register}/{ui,viewmodel}/` | Логин/email, регистрация, ошибки, публикация сессии; LoginDefaults приходит из графа |
 | Доска и её настройки | `presentation/calendar/{ui,viewmodel}/`, `presentation/board/{ui,viewmodel}/` | День/неделя/месяц, all-day, легенда, загрузка/мутации планов, фильтры пространств |
-| Desktop Web | `presentation/desktop/ui/` | Навигационная rail, sidebar пространств/мини-календарь, календарь с боковыми подробностями, пространство/участники и расширенный редактор; общие ViewModel/команды |
+| Desktop Web | `presentation/desktop/ui/` | Навигационная rail, sidebar пространств/мини-календарь, календарь с боковыми подробностями, пространство/участники, расширенный редактор и профиль; общие ViewModel/команды |
 | Календарные расчёты | `presentation/calendar/model/`, `time/` | Геометрия, календарные периоды, повторения, общие даты и Clock |
 | Пространства | `presentation/spaces/{ui,viewmodel}/` | Список, создание/вступление, приглашения, роли, ключ, настройки, выход и удаление |
 | План | `presentation/event/{ui,model,viewmodel}/` | Подробности/busy-only, общий черновик, видимость, даты/статус/повторы |
@@ -44,6 +44,7 @@ WhoBusy реализует пространства из Figma 02 (28 мобил
 | Android-граф | `androidApp/src/main/java/com/project/whobusy/di/AppGraph.kt` | Объединяет общие и Android-provider интерфейсы, принимает Context и AppConfiguration |
 | Browser HTTP | `data/network/RefreshCookiePolicy.kt`, `shared/src/{webMain,jsMain,wasmJsMain}/kotlin/com/project/whobusy/data/network/` | Политика native/browser cookie, Ktor JS Fetch с credentials include, запретом redirect и no-store |
 | Web proxy | `webApp/webpack.config.d/api-proxy.js` | `/api` development requests → HTTPS `WHOBUSY_API_PROXY_TARGET`, по умолчанию `https://whobusy.ru`; HttpOnly/Secure/SameSite не ослабляются |
+| Web deployment | `webApp/build.gradle.kts`, `webApp/deployment/funproject/` | `exportFunProjectFrontend` собирает Wasm production distribution и папку `webApp/build/deploy/frontend/` для ручного копирования в FunProject, Git и штатного Docker Compose deploy |
 
 `presentation/calendars/` и методы выбора ownerIds в CalendarRepository сохранены для совместимости старого кода, из навигации не вызываются. Исторический тип второй вкладки `ScreenTypes.Calendars` отображает SpacesRoot.
 
@@ -76,7 +77,7 @@ JS/Wasm подключают npm `@js-joda/timezone` 2.25.2 и инициали�
 
 `shared/src/commonMain/kotlin/com/project/whobusy/core/ui/` содержит общие `theme/` и `components/`, без зависимости от моделей приложения.
 
-- Тема задаёт палитру владельцев, светлые заливки карточек, Material 3 и типографику. Компоненты: кнопки/FAB, поля, Tabs/BottomBar/TopBar, DateCell, EventCard/Chip, Avatar, SwitchRow, Notice, ListRow, SectionTitle, ColorPalette, SelectionMark, RadioRow, Toggle, ChoicePill, Logo и часовая сетка.
+- Тема задаёт палитру владельцев, светлые заливки карточек, Material 3 и типографику. Компоненты: кнопки/FAB, поля, Tabs/BottomBar/TopBar, DateCell, EventCard/Chip, Avatar, SwitchRow, Notice, ListRow, SectionTitle/SectionCard, ColorPalette, SelectionMark, RadioRow, Toggle, ChoicePill, Logo и часовая сетка. WhoBusySectionCard объединяет заголовок с Material-иконкой, разделитель и содержимое раздела.
 - `components/WhoBusyIcon.kt` использует Material Icons через UiIcon: Filled и AutoMirrored ArrowBack, маркеры CheckCircle/RadioButtonUnchecked. Новые иконки выбираются из Material; редкие сторонние исключения требуют источника.
 - Общие строки/изображения — `shared/src/commonMain/composeResources/`: `values/{strings,auth_strings,spaces_strings,board_strings,event_strings,admin_strings,ui_strings,desktop_strings}.xml`, `drawable/`, исходный архив Figma `files/design/`. Генерируется публичный `com.project.whobusy.resources.Res`. Состояния ошибок используют `StringResource?`, UI разрешает их через Compose Resources `stringResource`.
 - Логотип внутри приложения — неизменённый пользовательский WhoBusy.png, `composeResources/drawable/whobusy_logo.png`, компонент WhoBusyLogo без tint на входе/восстановлении. WhoBusyCalendarBadge остаётся отдельной календарной иллюстрацией.
@@ -110,11 +111,14 @@ Native-клиент вручную передаёт refresh только в auth
 
 `WhoBusyApp`/`AppNavHost` принимают `desktopLayout` с default false; Android не меняет мобильную компоновку. Web передаёт capability true, а `presentation/desktop/DesktopLayout.kt` включает desktop только при ширине от 1160 dp; ниже показываются общие мобильные экраны с bottom bar. Изменение ширины не сбрасывает back stack, черновик/область ViewModel или выбранный режим календаря. Состояние календаря, авторизация, маршруты и CRUD не дублируются отдельными browser-репозиториями. Источник — неизменённый пользовательский SVG `docs/design/WhoBusy-Desktop-Board.svg`, 139 685 байт.
 
-- `presentation/desktop/ui/DesktopNavigationRail.kt` и `DesktopBoardSidebar.kt`: постоянная навигация, пространства и их фильтры, собственные планы, мини-календарь, создание/вступление; переходы через существующий AppNavHost.
+- `presentation/desktop/ui/DesktopNavigationRail.kt` и `DesktopBoardSidebar.kt`: постоянная навигация, пространства и их фильтры, собственные планы, мини-календарь, создание/вступление; переходы через существующий AppNavHost. Rail сохраняет ширину 80 dp; подписи используют 72 dp, одну строку и нулевой межбуквенный интервал, чтобы «Пространства» не переносилось и не обрезалось при штатном масштабе текста. Состояния Доски/Пространств имеют автономные Preview.
 - `DesktopCalendarScreen.kt`, `DesktopCalendarToolbar.kt`, `DesktopTimeCalendar.kt`, `DesktopMonthCalendar.kt`, `DesktopPlanDetailsScreen.kt`: день/неделя/месяц, today/перелистывание, временная сетка и карточки; в месяце справа agenda, выбранный план открывает боковые подробности. При уменьшении доступной ширины sidebar скрывается.
 - `DesktopSpacesScreen.kt` и `DesktopSpaceNavigation.kt`: вкладка пространств открывает широкую панель с реальными карточками, приглашениями и состояниями загрузки/ошибки/пустого списка; пространство выбирается пользователем, автоматического перехода нет. Sidebar прокручивает список вместе с действиями и подсказкой, поэтому доступен в низком широком окне.
 - `DesktopSpaceDetailsScreen.kt` и `DesktopSpaceInvitePanel.kt`: центральные участники/ожидающие приглашения, роль, приглашение по логину с выбором роли, копирование/обновление ключа. Участник открывает общий маршрут роли, настройки — существующий экран; права берутся из SpacesState. Во время мутации или необработанного результата Root проверяет актуальное состояние перед переходом и сообщает блокировку AppNavHost: rail, Back и переходы между пространствами тоже заблокированы; при удалении Root из композиции блокировка снимается.
 - `DesktopEventEditorScreen.kt`, `DesktopEventFields.kt`, `DesktopEventVisibilityPanel.kt`: расширенный общий черновик EditorState, заголовок/размещение/даты/all-day/повтор/статус/локация/описание и видимость по каждому пространству. Сохранение идёт через EditorCommand, во время операции переходы блокируются как в мобильном потоке.
+- `DesktopProfileScreen.kt`, `DesktopProfileSidebar.kt`, `DesktopProfileDetailsPanel.kt`, `DesktopProfileActionsPanel.kt`: широкая вкладка профиля в том же Telegram-стиле (отдельного макета профиля в SVG нет). Sidebar показывает пользователя, глобальную роль и переходы; основная область — реальные личные данные, цвет планов, число приглашений и действия безопасности из общей ProfileViewModel. Нет вымышленных устройств, online-статуса или статистики. Sidebar и основное содержимое прокручиваются независимо в низком окне. Редактирование, приглашения и управление аккаунтами открывают существующие маршруты; управление аккаунтами доступно только admin. Android и узкий Web сохраняют ProfileScreen.
+
+`profile/ui/ProfileLogoutAllDialog.kt` — общее подтверждение выхода со всех устройств для обеих компоновок. ProfileRoot проверяет актуальный isLoggingOut перед переходами и сообщает его AppNavHost: во время выхода блокируются rail, Back и переключение вкладок, в том числе после изменения ширины. Ошибка выхода остаётся в профиле для повтора, состояние сессии и обработка cookie не изменены.
 
 Чистые desktop-экраны имеют автономные Preview, длинные списки используют lazy-коллекции со стабильными ключами. SVG — источник оформления, не подложка UI; демонстрационные имена/даты в нём не подменяют серверные данные.
 
@@ -179,6 +183,7 @@ EventEditorViewModel объединяет Editor/Visibility/SpaceVisibility/Date
 | Конфигурация платформ | `androidApp/{build.gradle.kts,src/main/}`, `shared/build.gradle.kts`, `webApp/`, каталог версий |
 | Desktop Web | `presentation/desktop/ui/`, флаг desktopLayout в общих Root/AppNavHost, `docs/design/WhoBusy-Desktop-Board.svg` |
 | Browser REST/Back | `shared/src/webMain/` WebAppGraph/BrowserHttpClientFactory, `shared/src/{jsMain,wasmJsMain}/` Fetch engine, общий RefreshCookiePolicy; Back/History ещё не реализованы в `presentation/platform/` |
+| Экспорт Web для FunProject | `webApp/build.gradle.kts`, `webApp/deployment/funproject/{Dockerfile,.dockerignore,WHOBUSY_WEB.md}` |
 
 ```bash
 ./gradlew :androidApp:assembleDebug :androidApp:assembleRelease
@@ -192,9 +197,12 @@ EventEditorViewModel объединяет Editor/Visibility/SpaceVisibility/Date
 ./gradlew :webApp:jsBrowserDevelopmentRun
 ./gradlew :webApp:wasmJsBrowserDevelopmentRun
 ./gradlew :webApp:jsBrowserDistribution :webApp:wasmJsBrowserDistribution
+./gradlew :webApp:exportFunProjectFrontend -PwhoBusy.web.useMockData=false -PwhoBusy.web.apiBaseUrl=
 ```
 
 Release APK не подписан. `assemble…Test` только собирает инструментальные APK; `connected…Test` требует устройство/эмулятор и запускает тесты. Browser distribution публикуется целиком из `webApp/build/dist/{js,wasmJs}/productionExecutable/`, не одним JS-файлом; static hosting требует SPA fallback и same-origin `/api/` reverse proxy. Пример nginx — в README.
+
+`exportFunProjectFrontend` зависит от `wasmJsBrowserDistribution` и создаёт `webApp/build/deploy/frontend/`: вся distribution в `static/`, nginx Dockerfile, `.dockerignore` и `WHOBUSY_WEB.md`. Папка вручную объединяется с существующей `FunProject/frontend/`: Dockerfile и `.dockerignore` заменяются, `nginx.conf`, HTTPS-шаблон и исходники React сохраняются. `static/` выбрана вместо `dist/`, потому что `frontend/dist/` исключена `.gitignore` FunProject; Dockerfile, `.dockerignore`, инструкция и вся статика сохраняются пользователем в Git, затем отправляются в репозиторий и деплоятся обычным процессом FunProject (`git pull`, `docker compose up -d --build frontend`). Базовый `docker-compose.yml` по-прежнему использует build context `./frontend`; Compose override и deploy-скрипта нет. Dockerfile собирает nginx-образ без Node.js из готовой статики и существующего `frontend/nginx.conf`; порты, API proxy и сертификаты остаются в конфигурации FunProject. HTTPS заранее настраивается там. Для следующих обновлений целиком заменяется только `frontend/static/`, а не весь `frontend`, чтобы убрать старые хешированные файлы и сохранить конфигурацию. Экспорт сам ничего не копирует, не коммитит и не деплоит. Приведённая команда явно выбирает REST и same-origin `/api/`, перекрывая пользовательский `gradle.properties`.
 
 Web build-параметры независимы от Android: `-PwhoBusy.web.useMockData=true` явно включает demo; `-PwhoBusy.web.apiBaseUrl=https://<server>/api/` переопределяет same-origin URL. Для dev-server `WHOBUSY_API_PROXY_TARGET=https://<host>` меняет HTTPS origin прокси, без `/api` и credentials/query/fragment. Отдельный API origin требует backend CORS с конкретным разрешённым origin и credentials, а также подходящего SameSite; менять cookie в JS или отключать Secure/HttpOnly для обхода нельзя.
 
@@ -217,17 +225,19 @@ Web build-параметры независимы от Android: `-PwhoBusy.web.u
 
 ## Выполненные проверки
 
+- Пакет для коммита в FunProject: `:webApp:exportFunProjectFrontend` прошёл с актуальной production Wasm distribution (сборочные задачи использовали кеш). Все 63 файла совпадают с `frontend/static/` побайтово, `.dockerignore` присутствует, старого пакета с overlay больше нет. Для всех экспортируемых файлов проверено отсутствие исключения Git в FunProject. На копии `frontend` в `/tmp` проверено сохранение nginx/HTTPS-конфигурации при объединении папок; из неё собран обычный Docker-образ без overlay, выполнены `nginx -t`, HTTP 200 исходного `index.html` и проверка MIME `application/wasm`. Тестовые контейнеры изолированы; работающий FunProject не изменён, коммиты и реальный deploy не выполнялись. Авторизация и HTTPS этим smoke-тестом не проверялись.
 - 20.10.2026 безопасная проверка живого API: `GET https://whobusy.ru/api/health` → 200, `{"status":"ok"}`. Preflight `OPTIONS auth/login` с `Origin: http://localhost:8080` → 400 `Disallowed CORS origin`, несмотря на `Access-Control-Allow-Credentials: true`; поэтому development использует same-origin proxy, а не прямой cross-origin URL.
 - Development-server `:webApp:jsBrowserDevelopmentRun` запущен в штатном REST-режиме. Через его same-origin proxy проверены `GET /api/health` → 200 и анонимный `POST /api/auth/refresh` → 401 `No session`; заголовок удаления cookie сохраняет HttpOnly, Secure, SameSite=Strict и Path=/api/auth. Сервер проверки остановлен.
 - Публичный `GET https://whobusy.ru/api/openapi.json` → 200: версия 2.0.0, маршруты Auth/Board/Events/Spaces и поля Token соответствуют используемым клиентом адресам и формату access-token. Это проверка схемы, не выполнение авторизованных операций.
 - Проверка health/OPTIONS не подтверждает успешный login, регистрацию или CRUD. Реальные учётные данные и пользовательские данные при этой проверке не изменялись.
 - После desktop Web/browser auth выполнены `:shared:testAndroidHostTest` — 217 тестов, `:androidApp:testDebugUnitTest` — 1 тест, `:shared:jsNodeTest` — 72 теста; ошибок и пропусков нет. Browser-сценарии проверяют также смену пользователя между вкладками, отмену устаревших операций без logout новой сессии и ошибку старого access без зависшего состояния сохранения.
+- Для широкой компоновки профиля прошли компиляции Android/JS/Wasm, обе Web development-webpack сборки и запуск общих JVM/JS-тестов (217/72, без ошибок и пропусков). Профиль, его панели и общий диалог имеют автономные Preview обычного/admin, отсутствующих необязательных данных, ошибки и выхода; реальный browser UI не проверен из-за отсутствия доступного браузера в CUA.
 - `:shared:compileAndroidMain`, `:shared:compileKotlinJs`, `:shared:compileKotlinWasmJs` и `:shared:compileTestKotlinWasmJs` прошли. Последняя задача только компилирует Wasm-тесты, не запускает их.
 - `:androidApp:assembleDebug`, `:shared:assembleAndroidDeviceTest` и `:androidApp:assembleDebugAndroidTest` прошли. Инструментальные APK только собраны, тесты на устройстве/эмуляторе в этой проверке не запускались. `:androidApp:lintDebug` — 0 ошибок, 38 предупреждений.
 - `:webApp:wasmJsBrowserDistribution` прошла, включая production-оптимизацию Wasm и webpack; distribution находится в `webApp/build/dist/wasmJs/productionExecutable/`. Проверка `:webApp:jsBrowserProductionWebpack` остановлена после длительной оптимизации без результата; успешная JS production-distribution не подтверждена.
 - Итоговый запуск JVM/JS-тестов, Wasm test compilation, Android APK/test APK/Lint, `:webApp:jsBrowserDevelopmentWebpack` и `:webApp:wasmJsBrowserDistribution` завершился `BUILD SUCCESSFUL`; повторные задачи использовали актуальные up-to-date результаты. JS development-бандл собран после всех изменений. Проверены локальные Markdown-ссылки, `git diff --check` и побайтовое совпадение исходного SVG с файлом из загрузок.
 - Браузерная визуальная/E2E-проверка desktop и мобильной ширины не выполнена: в CUA нет доступных браузеров. Preview и проверки breakpoint не заменяют реальный UI-тест. Живой авторизованный login/CRUD без тестовой учётной записи также не проверялся.
-- CLI Reformat Code Android Studio ранее не запускался из-за read-only IDE cache/запрета Unix sockets в sandbox; Ktlint не применяется.
+- CLI Reformat Code Android Studio недоступен из-за read-only IDE cache/запрета Unix sockets в sandbox; Ktlint не применяется.
 
 ## Ограничения
 

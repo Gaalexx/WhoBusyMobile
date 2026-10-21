@@ -66,6 +66,7 @@ fun AppNavHost(userId: Int?, desktopLayout: Boolean = false) {
         val calendar = owner?.let { assistedMetroViewModel<CalendarViewModel>(viewModelStoreOwner = it) }
         val editor = owner?.let { assistedMetroViewModel<EventEditorViewModel>(viewModelStoreOwner = it) }
         var spaceNavigationBlocked by remember { mutableStateOf(false) }
+        var profileNavigationBlocked by remember { mutableStateOf(false) }
         LaunchedEffect(calendar) {
             if (desktopLayout) calendar?.onEvent(CalendarCommand.SelectMode(CalendarMode.Week))
         }
@@ -76,7 +77,8 @@ fun AppNavHost(userId: Int?, desktopLayout: Boolean = false) {
         val onBack: () -> Unit = {
             val calendarState = calendar?.state?.value
             val editorState = editor?.state?.value
-            if (!spaceNavigationBlocked && calendarState?.isSaving != true && calendarState?.result == null &&
+            if (!spaceNavigationBlocked && !profileNavigationBlocked &&
+                calendarState?.isSaving != true && calendarState?.result == null &&
                 editorState?.isSaving != true && editorState?.isSaved != true &&
                 backStack.size > 1
             ) {
@@ -101,7 +103,8 @@ fun AppNavHost(userId: Int?, desktopLayout: Boolean = false) {
             refresh()
         }
         val openSpace: (Int) -> Unit = { id ->
-            if (!spaceNavigationBlocked && calendar?.state?.value?.isSaving != true && calendar?.state?.value?.result == null &&
+            if (!spaceNavigationBlocked && !profileNavigationBlocked &&
+                calendar?.state?.value?.isSaving != true && calendar?.state?.value?.result == null &&
                 editor?.state?.value?.isSaving != true && editor?.state?.value?.isSaved != true
             ) {
                 if (backStack.last() in listOf(ScreenTypes.CreateSpace, ScreenTypes.JoinSpace, ScreenTypes.Invitations)) {
@@ -121,7 +124,7 @@ fun AppNavHost(userId: Int?, desktopLayout: Boolean = false) {
             currentScreen is ScreenTypes.SpaceDetails || currentScreen is ScreenTypes.EventDetails ||
             currentScreen is ScreenTypes.EventEditor
         val selectTab: (ScreenTypes) -> Unit = {
-            if ((!desktop || railNavigationAllowed) && !spaceNavigationBlocked &&
+            if ((!desktop || railNavigationAllowed) && !spaceNavigationBlocked && !profileNavigationBlocked &&
                 calendar?.state?.value?.isSaving != true && calendar?.state?.value?.result == null &&
                 editor?.state?.value?.isSaving != true && editor?.state?.value?.isSaved != true
             ) {
@@ -133,7 +136,7 @@ fun AppNavHost(userId: Int?, desktopLayout: Boolean = false) {
             if (desktop) {
                 DesktopNavigationRail(
                     currentScreen as? ScreenTypes, calendar?.state?.collectAsStateWithLifecycle()?.value?.user, selectTab,
-                    enabled = railNavigationAllowed && !spaceNavigationBlocked,
+                    enabled = railNavigationAllowed && !spaceNavigationBlocked && !profileNavigationBlocked,
                 )
             }
             Box(Modifier.weight(1f).fillMaxHeight()) {
@@ -141,6 +144,7 @@ fun AppNavHost(userId: Int?, desktopLayout: Boolean = false) {
                     modifier = when {
                         desktopLayout && userId == null -> Modifier.widthIn(max = 560.dp).fillMaxSize().align(Alignment.Center)
                         desktop && currentScreen != ScreenTypes.Calendar && currentScreen != ScreenTypes.Calendars &&
+                            currentScreen != ScreenTypes.Profile &&
                             currentScreen !is ScreenTypes.EventDetails &&
                             currentScreen !is ScreenTypes.SpaceDetails && currentScreen !is ScreenTypes.EventEditor ->
                             Modifier.widthIn(max = 840.dp).fillMaxSize().align(Alignment.Center)
@@ -188,6 +192,8 @@ fun AppNavHost(userId: Int?, desktopLayout: Boolean = false) {
                                     onEditProfile = { backStack.navigateTo(ScreenTypes.ProfileEditor) },
                                     onInvitations = { backStack.navigateTo(ScreenTypes.Invitations) },
                                     onAdmin = { backStack.navigateTo(ScreenTypes.Users) },
+                                    desktopLayout = desktop,
+                                    onNavigationBlockedChanged = { profileNavigationBlocked = it },
                                 )
                             }
                             entry<ScreenTypes.ProfileEditor> {

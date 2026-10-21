@@ -27,4 +27,12 @@
     <string name="desktop_filter_space">Показывать %1$s</string>
     <string name="desktop_open_space">Открыть %1$s</string>
     <string name="desktop_board_empty">Выберите пространства или включите свои планы</string>
+    <string name="desktop_profile_title">Настройки аккаунта</string>
+    <string name="desktop_profile_subtitle">Личные данные, приглашения и безопасность</string>
+    <string name="desktop_profile_not_specified">Не указано</string>
+    <string name="desktop_profile_invitations_body">Здесь собраны приглашения в пространства. Выберите, к каким присоединиться.</string>
+    <string name="desktop_profile_open_invitations">Открыть приглашения</string>
+    <string name="desktop_profile_security">Безопасность</string>
+    <string name="desktop_profile_security_body">Управляйте паролем и завершайте сеансы на своих устройствах.</string>
+    <string name="desktop_profile_password">Изменить пароль</string>
 </resources>

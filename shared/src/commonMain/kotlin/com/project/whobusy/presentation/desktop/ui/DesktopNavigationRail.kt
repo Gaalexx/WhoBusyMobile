@@ -52,7 +52,7 @@ internal fun DesktopNavigationRail(
         currentScreen is ScreenTypes.Users || currentScreen is ScreenTypes.UserEditor
     Column(
         Modifier.width(80.dp).fillMaxHeight().background(DesktopPalette.Rail)
-            .padding(horizontal = 10.dp, vertical = 22.dp).testTag("desktop-navigation"),
+            .padding(horizontal = 4.dp, vertical = 22.dp).testTag("desktop-navigation"),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
         WhoBusyAvatar("W", DesktopPalette.Accent)
@@ -93,7 +93,16 @@ private fun DesktopRailItem(label: String, icon: UiIcon, selected: Boolean, enab
         verticalArrangement = Arrangement.spacedBy(8.dp),
     ) {
         WhoBusyIcon(icon, tint = Color.White)
-        Text(label, color = Color.White, fontSize = 10.sp, lineHeight = 12.sp, textAlign = TextAlign.Center)
+        Text(
+            label,
+            color = Color.White,
+            fontSize = 10.sp,
+            lineHeight = 12.sp,
+            letterSpacing = 0.sp,
+            textAlign = TextAlign.Center,
+            maxLines = 1,
+            softWrap = false,
+        )
     }
 }
 
@@ -101,4 +110,10 @@ private fun DesktopRailItem(label: String, icon: UiIcon, selected: Boolean, enab
 @Composable
 private fun DesktopNavigationPreview() {
     WhoBusyTheme { DesktopNavigationRail(ScreenTypes.Calendar, CalendarPreviewData.state.user, {}) }
+}
+
+@Preview(name = "Пространства", widthDp = 80, heightDp = 960)
+@Composable
+private fun DesktopSpacesNavigationPreview() {
+    WhoBusyTheme { DesktopNavigationRail(ScreenTypes.Calendars, CalendarPreviewData.state.user, {}) }
 }

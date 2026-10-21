@@ -11,7 +11,7 @@
 - `shared/src/androidMain/` — OkHttp, Android Keystore/DataStore, платформенная блокировка моков и BackHandler.
 - `androidApp` — Android-host `com.project.whobusy`: Application, Activity, системные панели и AppGraph; BuildConfig передаётся общему CalendarModule через AppConfiguration для выбора REST/demo.
 - `shared/src/webMain/` — браузерный Metro-граф и Ktor HTTP-фабрика; JS/Wasm-адаптеры включают отправку HttpOnly cookie через Fetch credentials.
-- `webApp` — браузерная точка входа для JavaScript и Wasm, build-конфигурация и dev-server API proxy; по умолчанию использует REST.
+- `webApp` — браузерная точка входа для JavaScript и Wasm, build-конфигурация, dev-server API proxy и экспорт пакета для FunProject; по умолчанию использует REST.
 
 Отдельного модуля `core:ui` и исходного демонстрационного Greeting больше нет. Android и Web используют общие состояния, модели и расчёты; desktop-компоновка включается только для широкого браузера, Android и узкий Web сохраняют мобильный UI. Нативные iOS и desktop цели пока не настроены.
 
@@ -103,6 +103,42 @@ Android по умолчанию использует реальный API: `whoB
 Повторения поддерживают ежедневный режим, будни, недели, месяцы и годы, включая `INTERVAL`, `COUNT` и `UNTIL` для используемого подмножества RRULE. Изменения/удаление относятся ко всей серии. Исключения отдельных вхождений, постоянный локальный кеш планов и offline CRUD не реализованы. Форматирование дат пока рассчитано на русский интерфейс.
 
 ## Размещение Web
+
+### Папка для FunProject
+
+Сборка готовит папку `frontend`, которую можно вручную перенести в существующий `~/FunProject`, сохранить в Git и задеплоить обычным способом:
+
+```bash
+./gradlew :webApp:exportFunProjectFrontend -PwhoBusy.web.useMockData=false -PwhoBusy.web.apiBaseUrl=
+cp -a webApp/build/deploy/frontend/. ~/FunProject/frontend/
+```
+
+Пустой `apiBaseUrl` выбирает `/api/` текущего origin; явные свойства исключают случайное использование demo или другого URL из пользовательского `gradle.properties`.
+
+Папка `webApp/build/deploy/frontend/` содержит `static/` со всей production distribution, `Dockerfile`, `.dockerignore` и `WHOBUSY_WEB.md`. Копирование **объединяет содержимое** с `~/FunProject/frontend/`: заменяются Dockerfile и `.dockerignore`, но сохраняются существующие `nginx.conf`, HTTPS-шаблон и исходники React. Не удаляй целиком каталог `FunProject/frontend`. Сборка не копирует файлы в FunProject, не создаёт коммитов и ничего не деплоит автоматически.
+
+Статика помещается в `frontend/static/`, а не `frontend/dist/`: `dist` исключён существующим `.gitignore` FunProject. После копирования сохрани Dockerfile, `.dockerignore`, `WHOBUSY_WEB.md` и всю `static/` в Git FunProject, проверь изменения и отправь их в репозиторий:
+
+```bash
+cd ~/FunProject
+git add frontend/Dockerfile frontend/.dockerignore frontend/WHOBUSY_WEB.md frontend/static
+git diff --cached --stat
+git commit -m "Update WhoBusy frontend"
+git push
+```
+
+На сервере используй обычный процесс деплоя FunProject. Для стандартного Docker Compose после получения нового коммита:
+
+```bash
+git pull
+docker compose up -d --build frontend
+```
+
+Существующий `docker-compose.yml` продолжает собирать `./frontend`; дополнительные Compose-файлы и deploy-скрипт не нужны. Docker-образ собирается nginx из готовой статики без Node.js и копирует существующий `frontend/nginx.conf`. API proxy, порты, сертификаты и настройки HTTPS остаются под управлением FunProject; HTTPS должен быть настроен заранее, пакет не выпускает сертификаты.
+
+При следующих обновлениях заменяй **только содержимое `frontend/static/` целиком**, чтобы не копить старые Wasm-файлы, затем обновляй остальные файлы пакета и повторяй commit/push/deploy. Не используй `--delete` для всего `FunProject/frontend/`: это удалит его конфигурацию. Шаблоны пакета находятся в `webApp/deployment/funproject/`.
+
+### Другой static hosting
 
 Собирай и публикуй всю browser distribution, а не один `.js`: ей нужны HTML, Compose Resources, шрифты и Wasm/Skiko-файлы.
 

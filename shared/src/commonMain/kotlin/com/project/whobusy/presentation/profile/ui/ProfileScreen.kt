@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -24,7 +23,6 @@ import com.project.whobusy.core.ui.components.WhoBusyAvatar
 import com.project.whobusy.core.ui.components.WhoBusyButton
 import com.project.whobusy.core.ui.components.WhoBusyListRow
 import com.project.whobusy.core.ui.components.WhoBusyScreenLayout
-import com.project.whobusy.core.ui.components.WhoBusyTextButton
 import com.project.whobusy.core.ui.components.WhoBusyTopBar
 import com.project.whobusy.core.ui.theme.WhoBusyTheme
 import com.project.whobusy.core.ui.theme.calendarColor
@@ -33,11 +31,8 @@ import com.project.whobusy.domain.model.UserRole
 import com.project.whobusy.presentation.calendar.preview.CalendarPreviewData
 import com.project.whobusy.presentation.platform.PlatformBackHandler
 import com.project.whobusy.resources.Res
-import com.project.whobusy.resources.action_cancel
 import com.project.whobusy.resources.action_logout
 import com.project.whobusy.resources.auth_logout_all
-import com.project.whobusy.resources.auth_logout_all_confirmation
-import com.project.whobusy.resources.auth_logout_all_description
 import com.project.whobusy.resources.auth_profile_admin
 import com.project.whobusy.resources.auth_profile_admin_description
 import com.project.whobusy.resources.auth_profile_color_description
@@ -150,25 +145,10 @@ fun ProfileScreen(
         Spacer(Modifier.navigationBarsPadding())
     }
     if (showLogoutAllConfirmation) {
-        AlertDialog(
-            onDismissRequest = { if (!isLoggingOut) onCancelLogoutAll() },
-            title = { Text(stringResource(Res.string.auth_logout_all_confirmation)) },
-            text = { Text(stringResource(Res.string.auth_logout_all_description)) },
-            confirmButton = {
-                WhoBusyTextButton(
-                    text = stringResource(Res.string.action_logout),
-                    onClick = onConfirmLogoutAll,
-                    enabled = !isLoggingOut,
-                    loading = isLoggingOut,
-                )
-            },
-            dismissButton = {
-                WhoBusyTextButton(
-                    text = stringResource(Res.string.action_cancel),
-                    onClick = onCancelLogoutAll,
-                    enabled = !isLoggingOut,
-                )
-            },
+        ProfileLogoutAllDialog(
+            isLoggingOut = isLoggingOut,
+            onCancel = onCancelLogoutAll,
+            onConfirm = onConfirmLogoutAll,
         )
     }
 }
